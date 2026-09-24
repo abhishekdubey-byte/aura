@@ -1,0 +1,177 @@
+{
+    "filename": "ANIME-PICTURES.NET_-_916738-1455x2000-original-thore+(nathalukpol)-single-long+hair-tall+image-fringe.jpg",
+    "original_path": "/storage/emulated/0/Download/SAMPLEDATAIMAGES/hqnew/ANIME-PICTURES.NET_-_916738-1455x2000-original-thore+(nathalukpol)-single-long+hair-tall+image-fringe.jpg",
+    "score": 53210,
+    "isBodyOnly": true,
+    "bodyShape": "Dad Bod \ud83c\udf7a",
+    "bodyShapeConfidence": 0.8,
+    "rawMetrics": {
+        "Waist-to-Hip Ratio": 0.858,
+        "Waist-to-Shoulder Ratio": 1.291,
+        "Hip-to-Shoulder Ratio": 1.504,
+        "Chest-to-Waist Ratio": 1.194,
+        "Thigh Fullness": 1.778,
+        "Neck-to-Shoulder Ratio": 0.587,
+        "Calf-to-Thigh Ratio": 0.942
+    },
+    "allSlangs": [
+        "Dad Bod \ud83c\udf7a",
+        "Confident form \u2728",
+        "Strong posture \ud83d\udc51",
+        "Serving looks \ud83d\udc85",
+        "Immaculate style \ud83e\ude9e",
+        "High Quality \ud83d\udcf8",
+        "Crisp \ud83c\udfa5",
+        "Dynamic \u26a1",
+        "Main-character energy \ud83d\udcab",
+        "Absolute Nudity \ud83d\udd25\ud83d\udd25",
+        "Too Hot For Instagram \ud83d\udeab",
+        "OnlyFans Top 0.1% \ud83d\udcb8",
+        "Bold \ud83c\udf36\ufe0f",
+        "Breaking the Internet \ud83c\udf10"
+    ],
+    "face": null,
+    "eyes": null,
+    "expression": null,
+    "body": {
+        "score": 500,
+        "confidence": 0.85,
+        "primaryTraits": [
+            "Confident form \u2728"
+        ],
+        "components": [
+            {
+                "attribute": "Base Frame",
+                "measurement": "Detected",
+                "scoreImpact": 500,
+                "description": "Subject body frame identified in image."
+            }
+        ]
+    },
+    "posture": {
+        "score": 800,
+        "confidence": 0.9,
+        "primaryTraits": [
+            "Strong posture \ud83d\udc51"
+        ],
+        "components": [
+            {
+                "attribute": "Posture Alignment",
+                "measurement": "40.0%",
+                "scoreImpact": 800,
+                "description": "Shoulder and torso alignment derived from pose detection."
+            }
+        ]
+    },
+    "pose": {
+        "score": 320,
+        "confidence": 0.7,
+        "primaryTraits": [
+            "Dynamic \u26a1"
+        ],
+        "components": [
+            {
+                "attribute": "Dynamism",
+                "measurement": "40%",
+                "scoreImpact": 320,
+                "description": "Pose energy and non-static presentation."
+            }
+        ]
+    },
+    "style": {
+        "score": 1479,
+        "confidence": 0.8,
+        "primaryTraits": [
+            "Serving looks \ud83d\udc85",
+            "Immaculate style \ud83e\ude9e"
+        ],
+        "components": [
+            {
+                "attribute": "Styling Score",
+                "measurement": "78%",
+                "scoreImpact": 779,
+                "description": "Overall fashion and composition aesthetic."
+            },
+            {
+                "attribute": "Glamorous Makeup",
+                "measurement": "Yes",
+                "scoreImpact": 300,
+                "description": "Makeup application detected."
+            },
+            {
+                "attribute": "Apparel Complexity",
+                "measurement": "2 items",
+                "scoreImpact": 200,
+                "description": "Bonus for complex outfits and accessories."
+            },
+            {
+                "attribute": "Dominant Emotion",
+                "measurement": "sad",
+                "scoreImpact": 200,
+                "description": "Non-neutral engaging emotion detected."
+            }
+        ]
+    },
+    "image": {
+        "score": 2310,
+        "confidence": 0.9,
+        "primaryTraits": [
+            "High Quality \ud83d\udcf8",
+            "Crisp \ud83c\udfa5"
+        ],
+        "components": [
+            {
+                "attribute": "Base Quality",
+                "measurement": "Standard",
+                "scoreImpact": 500,
+                "description": "Baseline image processing score."
+            },
+            {
+                "attribute": "Lighting Quality",
+                "measurement": "90%",
+                "scoreImpact": 900,
+                "description": "Evaluation of image exposure and illumination."
+            },
+            {
+                "attribute": "Skin Smoothness",
+                "measurement": "90%",
+                "scoreImpact": 450,
+                "description": "Skin texture clarity and smoothness."
+            },
+            {
+                "attribute": "Hair Volume",
+                "measurement": "92%",
+                "scoreImpact": 460,
+                "description": "Proportion of hair volume relative to face size."
+            }
+        ]
+    },
+    "presence": {
+        "score": 541,
+        "confidence": 0.85,
+        "primaryTraits": [
+            "Main-character energy \ud83d\udcab"
+        ],
+        "components": [
+            {
+                "attribute": "Overall Multiplier",
+                "measurement": "10%",
+                "scoreImpact": 541,
+                "description": "Aura presence scales directly with all accumulated points."
+            }
+        ]
+    },
+    "content": {
+        "score": 87,
+        "confidence": 0.95,
+        "primaryTraits": [],
+        "components": [
+            {
+                "attribute": "Provocative Bonus",
+                "measurement": "Explicit",
+                "scoreImpact": 34981,
+                "description": "Massive aura amplification for bold explicit content."
+            }
+        ]
+    }
+}

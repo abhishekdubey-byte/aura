@@ -1,0 +1,263 @@
+{
+    "filename": "c6f6c218-9738-44a3-9f66-ee0cb4058f4e.jpeg",
+    "original_path": "/storage/emulated/0/Download/SAMPLEDATAIMAGES/c6f6c218-9738-44a3-9f66-ee0cb4058f4e.jpeg",
+    "score": 54691,
+    "isBodyOnly": false,
+    "bodyShape": "Hourglass goddess \u23f3",
+    "bodyShapeConfidence": 0.8,
+    "rawMetrics": {
+        "Face Symmetry": 0.835,
+        "Smile Probability": 0.03,
+        "Waist-to-Hip Ratio": 0.643,
+        "Waist-to-Shoulder Ratio": 0.786,
+        "Hip-to-Shoulder Ratio": 1.223,
+        "Bust-to-Waist Ratio": 1.577,
+        "Thigh Fullness": 1.614,
+        "Neck-to-Shoulder Ratio": 0.569,
+        "Calf-to-Thigh Ratio": 0.838
+    },
+    "allSlangs": [
+        "Ice Queen \ud83e\uddca",
+        "Symmetrical Features \ud83d\udcd0",
+        "Piercing Gaze \ud83e\udd85",
+        "Stoic \ud83e\uddca",
+        "Hourglass goddess \u23f3",
+        "Dump Truck \ud83c\udf51",
+        "God-Tier Proportions \ud83e\uddec",
+        "Wide Hips \ud83c\udf0a",
+        "Massive Assets \ud83c\udf48\ud83c\udf48",
+        "Top-Heavy Queen \ud83d\udc51",
+        "Thick Thighs Save Lives \ud83c\udf57",
+        "Confident form \u2728",
+        "Strong posture \ud83d\udc51",
+        "Serving looks \ud83d\udc85",
+        "Immaculate style \ud83e\ude9e",
+        "High Quality \ud83d\udcf8",
+        "Crisp \ud83c\udfa5",
+        "Dynamic \u26a1",
+        "Main-character energy \ud83d\udcab",
+        "Baddie \ud83e\udd75",
+        "Breaking the Internet \ud83c\udf10"
+    ],
+    "face": {
+        "score": 1670,
+        "confidence": 0.9,
+        "primaryTraits": [
+            "Symmetrical Features \ud83d\udcd0"
+        ],
+        "components": [
+            {
+                "attribute": "Facial Symmetry",
+                "measurement": "83.5%",
+                "scoreImpact": 1670,
+                "description": "Calculated based on the structural balance of your facial landmarks. Higher is more symmetrical."
+            }
+        ]
+    },
+    "eyes": {
+        "score": 1000,
+        "confidence": 0.7,
+        "primaryTraits": [
+            "Piercing Gaze \ud83e\udd85"
+        ],
+        "components": []
+    },
+    "expression": {
+        "score": 1000,
+        "confidence": 0.9702164735645056,
+        "primaryTraits": [
+            "Stoic \ud83e\uddca"
+        ],
+        "components": [
+            {
+                "attribute": "Smile Probability",
+                "measurement": "3.0%",
+                "scoreImpact": 1000,
+                "description": "Stoic, relaxed facial expression detected."
+            }
+        ]
+    },
+    "body": {
+        "score": 20500,
+        "confidence": 0.85,
+        "primaryTraits": [
+            "Confident form \u2728"
+        ],
+        "components": [
+            {
+                "attribute": "Base Frame",
+                "measurement": "Detected",
+                "scoreImpact": 500,
+                "description": "Subject body frame identified in image."
+            },
+            {
+                "attribute": "Waist-to-Hip Ratio",
+                "measurement": "0.64",
+                "scoreImpact": 6000,
+                "description": "Exceptional hourglass proportions."
+            },
+            {
+                "attribute": "Hip-to-Shoulder Ratio",
+                "measurement": "1.22",
+                "scoreImpact": 4000,
+                "description": "Prominent lower body proportions."
+            },
+            {
+                "attribute": "Chest-to-Waist Ratio",
+                "measurement": "1.58",
+                "scoreImpact": 6000,
+                "description": "Exceptional upper body proportions."
+            },
+            {
+                "attribute": "Thigh Fullness",
+                "measurement": "1.61",
+                "scoreImpact": 4000,
+                "description": "High muscular/curvy thigh volume."
+            }
+        ]
+    },
+    "posture": {
+        "score": 800,
+        "confidence": 0.9,
+        "primaryTraits": [
+            "Strong posture \ud83d\udc51"
+        ],
+        "components": [
+            {
+                "attribute": "Posture Alignment",
+                "measurement": "40.0%",
+                "scoreImpact": 800,
+                "description": "Shoulder and torso alignment derived from pose detection."
+            }
+        ]
+    },
+    "pose": {
+        "score": 320,
+        "confidence": 0.7,
+        "primaryTraits": [
+            "Dynamic \u26a1"
+        ],
+        "components": [
+            {
+                "attribute": "Dynamism",
+                "measurement": "40%",
+                "scoreImpact": 320,
+                "description": "Pose energy and non-static presentation."
+            }
+        ]
+    },
+    "style": {
+        "score": 1246,
+        "confidence": 0.8,
+        "primaryTraits": [
+            "Serving looks \ud83d\udc85",
+            "Immaculate style \ud83e\ude9e"
+        ],
+        "components": [
+            {
+                "attribute": "Styling Score",
+                "measurement": "75%",
+                "scoreImpact": 746,
+                "description": "Overall fashion and composition aesthetic."
+            },
+            {
+                "attribute": "Apparel Complexity",
+                "measurement": "3 items",
+                "scoreImpact": 300,
+                "description": "Bonus for complex outfits and accessories."
+            },
+            {
+                "attribute": "Dominant Emotion",
+                "measurement": "angry",
+                "scoreImpact": 200,
+                "description": "Non-neutral engaging emotion detected."
+            }
+        ]
+    },
+    "image": {
+        "score": 2040,
+        "confidence": 0.9,
+        "primaryTraits": [
+            "High Quality \ud83d\udcf8",
+            "Crisp \ud83c\udfa5"
+        ],
+        "components": [
+            {
+                "attribute": "Base Quality",
+                "measurement": "Standard",
+                "scoreImpact": 500,
+                "description": "Baseline image processing score."
+            },
+            {
+                "attribute": "Lighting Quality",
+                "measurement": "90%",
+                "scoreImpact": 900,
+                "description": "Evaluation of image exposure and illumination."
+            },
+            {
+                "attribute": "Skin Smoothness",
+                "measurement": "60%",
+                "scoreImpact": 300,
+                "description": "Skin texture clarity and smoothness."
+            },
+            {
+                "attribute": "Hair Volume",
+                "measurement": "68%",
+                "scoreImpact": 340,
+                "description": "Proportion of hair volume relative to face size."
+            }
+        ]
+    },
+    "presence": {
+        "score": 11894,
+        "confidence": 0.85,
+        "primaryTraits": [
+            "Main-character energy \ud83d\udcab"
+        ],
+        "components": [
+            {
+                "attribute": "Overall Multiplier",
+                "measurement": "25%",
+                "scoreImpact": 6894,
+                "description": "Aura presence scales directly with all accumulated points."
+            },
+            {
+                "attribute": "Divine Feminine Bonus",
+                "measurement": "Active",
+                "scoreImpact": 5000,
+                "description": "Inherent aura boost for female presence."
+            }
+        ]
+    },
+    "content": {
+        "score": 72,
+        "confidence": 0.95,
+        "primaryTraits": [],
+        "components": [
+            {
+                "attribute": "Implied Curves (Chest)",
+                "measurement": "1.58",
+                "scoreImpact": 800,
+                "description": "Subtle bonus for aesthetic proportions."
+            },
+            {
+                "attribute": "Implied Curves (Waist)",
+                "measurement": "0.64",
+                "scoreImpact": 800,
+                "description": "Subtle bonus for aesthetic proportions."
+            },
+            {
+                "attribute": "Implied Curves (Thighs)",
+                "measurement": "1.61",
+                "scoreImpact": 600,
+                "description": "Subtle bonus for aesthetic proportions."
+            },
+            {
+                "attribute": "Implied Curves (Hips)",
+                "measurement": "1.22",
+                "scoreImpact": 400,
+                "description": "Subtle bonus for aesthetic proportions."
+            }
+        ]
+    }
+}

@@ -1,0 +1,235 @@
+{
+    "filename": "012-cb.jpg",
+    "original_path": "/storage/emulated/0/Download/SAMPLEDATAIMAGES/012-cb.jpg",
+    "score": 32383,
+    "isBodyOnly": false,
+    "bodyShape": "Pear-shaped queen \ud83c\udf50",
+    "bodyShapeConfidence": 0.8,
+    "rawMetrics": {
+        "Face Symmetry": 0.824,
+        "Smile Probability": 0.007,
+        "Waist-to-Hip Ratio": 0.843,
+        "Waist-to-Shoulder Ratio": 1.137,
+        "Hip-to-Shoulder Ratio": 1.349,
+        "Bust-to-Waist Ratio": 1.012,
+        "Thigh Fullness": 1.396,
+        "Neck-to-Shoulder Ratio": 0.462,
+        "Calf-to-Thigh Ratio": 0.837
+    },
+    "allSlangs": [
+        "Ice Queen \ud83e\uddca",
+        "Symmetrical Features \ud83d\udcd0",
+        "Piercing Gaze \ud83e\udd85",
+        "Stoic \ud83e\uddca",
+        "Pear-shaped queen \ud83c\udf50",
+        "Wide Hips \ud83c\udf0a",
+        "Thick Thighs Save Lives \ud83c\udf57",
+        "Confident form \u2728",
+        "Strong posture \ud83d\udc51",
+        "Serving looks \ud83d\udc85",
+        "Immaculate style \ud83e\ude9e",
+        "High Quality \ud83d\udcf8",
+        "Crisp \ud83c\udfa5",
+        "Dynamic \u26a1",
+        "Main-character energy \ud83d\udcab",
+        "Baddie \ud83e\udd75",
+        "Breaking the Internet \ud83c\udf10"
+    ],
+    "face": {
+        "score": 1648,
+        "confidence": 0.9,
+        "primaryTraits": [
+            "Symmetrical Features \ud83d\udcd0"
+        ],
+        "components": [
+            {
+                "attribute": "Facial Symmetry",
+                "measurement": "82.4%",
+                "scoreImpact": 1648,
+                "description": "Calculated based on the structural balance of your facial landmarks. Higher is more symmetrical."
+            }
+        ]
+    },
+    "eyes": {
+        "score": 1000,
+        "confidence": 0.7,
+        "primaryTraits": [
+            "Piercing Gaze \ud83e\udd85"
+        ],
+        "components": []
+    },
+    "expression": {
+        "score": 1000,
+        "confidence": 0.9928331258706748,
+        "primaryTraits": [
+            "Stoic \ud83e\uddca"
+        ],
+        "components": [
+            {
+                "attribute": "Smile Probability",
+                "measurement": "0.7%",
+                "scoreImpact": 1000,
+                "description": "Stoic, relaxed facial expression detected."
+            }
+        ]
+    },
+    "body": {
+        "score": 8500,
+        "confidence": 0.85,
+        "primaryTraits": [
+            "Confident form \u2728"
+        ],
+        "components": [
+            {
+                "attribute": "Base Frame",
+                "measurement": "Detected",
+                "scoreImpact": 500,
+                "description": "Subject body frame identified in image."
+            },
+            {
+                "attribute": "Hip-to-Shoulder Ratio",
+                "measurement": "1.35",
+                "scoreImpact": 4000,
+                "description": "Prominent lower body proportions."
+            },
+            {
+                "attribute": "Thigh Fullness",
+                "measurement": "1.40",
+                "scoreImpact": 4000,
+                "description": "High muscular/curvy thigh volume."
+            }
+        ]
+    },
+    "posture": {
+        "score": 800,
+        "confidence": 0.9,
+        "primaryTraits": [
+            "Strong posture \ud83d\udc51"
+        ],
+        "components": [
+            {
+                "attribute": "Posture Alignment",
+                "measurement": "40.0%",
+                "scoreImpact": 800,
+                "description": "Shoulder and torso alignment derived from pose detection."
+            }
+        ]
+    },
+    "pose": {
+        "score": 320,
+        "confidence": 0.7,
+        "primaryTraits": [
+            "Dynamic \u26a1"
+        ],
+        "components": [
+            {
+                "attribute": "Dynamism",
+                "measurement": "40%",
+                "scoreImpact": 320,
+                "description": "Pose energy and non-static presentation."
+            }
+        ]
+    },
+    "style": {
+        "score": 1210,
+        "confidence": 0.8,
+        "primaryTraits": [
+            "Serving looks \ud83d\udc85",
+            "Immaculate style \ud83e\ude9e"
+        ],
+        "components": [
+            {
+                "attribute": "Styling Score",
+                "measurement": "71%",
+                "scoreImpact": 710,
+                "description": "Overall fashion and composition aesthetic."
+            },
+            {
+                "attribute": "Apparel Complexity",
+                "measurement": "3 items",
+                "scoreImpact": 300,
+                "description": "Bonus for complex outfits and accessories."
+            },
+            {
+                "attribute": "Dominant Emotion",
+                "measurement": "fear",
+                "scoreImpact": 200,
+                "description": "Non-neutral engaging emotion detected."
+            }
+        ]
+    },
+    "image": {
+        "score": 1650,
+        "confidence": 0.9,
+        "primaryTraits": [
+            "High Quality \ud83d\udcf8",
+            "Crisp \ud83c\udfa5"
+        ],
+        "components": [
+            {
+                "attribute": "Base Quality",
+                "measurement": "Standard",
+                "scoreImpact": 500,
+                "description": "Baseline image processing score."
+            },
+            {
+                "attribute": "Lighting Quality",
+                "measurement": "60%",
+                "scoreImpact": 600,
+                "description": "Evaluation of image exposure and illumination."
+            },
+            {
+                "attribute": "Skin Smoothness",
+                "measurement": "50%",
+                "scoreImpact": 250,
+                "description": "Skin texture clarity and smoothness."
+            },
+            {
+                "attribute": "Hair Volume",
+                "measurement": "60%",
+                "scoreImpact": 300,
+                "description": "Proportion of hair volume relative to face size."
+            }
+        ]
+    },
+    "presence": {
+        "score": 8782,
+        "confidence": 0.85,
+        "primaryTraits": [
+            "Main-character energy \ud83d\udcab"
+        ],
+        "components": [
+            {
+                "attribute": "Overall Multiplier",
+                "measurement": "25%",
+                "scoreImpact": 3782,
+                "description": "Aura presence scales directly with all accumulated points."
+            },
+            {
+                "attribute": "Divine Feminine Bonus",
+                "measurement": "Active",
+                "scoreImpact": 5000,
+                "description": "Inherent aura boost for female presence."
+            }
+        ]
+    },
+    "content": {
+        "score": 55,
+        "confidence": 0.95,
+        "primaryTraits": [],
+        "components": [
+            {
+                "attribute": "Implied Curves (Thighs)",
+                "measurement": "1.40",
+                "scoreImpact": 600,
+                "description": "Subtle bonus for aesthetic proportions."
+            },
+            {
+                "attribute": "Implied Curves (Hips)",
+                "measurement": "1.35",
+                "scoreImpact": 400,
+                "description": "Subtle bonus for aesthetic proportions."
+            }
+        ]
+    }
+}

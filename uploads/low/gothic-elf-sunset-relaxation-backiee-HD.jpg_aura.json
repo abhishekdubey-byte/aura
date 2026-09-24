@@ -1,0 +1,181 @@
+{
+    "filename": "gothic-elf-sunset-relaxation-backiee-HD.jpg",
+    "original_path": "/storage/emulated/0/Download/SAMPLEDATAIMAGES/gothic-elf-sunset-relaxation-backiee-HD.jpg",
+    "score": 7280,
+    "isBodyOnly": false,
+    "bodyShape": "Portrait Mode \ud83d\udcf8",
+    "bodyShapeConfidence": 0.8,
+    "rawMetrics": {
+        "Face Symmetry": 0.439,
+        "Smile Probability": 0.671
+    },
+    "allSlangs": [
+        "Looking Away \ud83c\udf12",
+        "Golden Retriever Energy \ud83d\udc36",
+        "Symmetrical Features \ud83d\udcd0",
+        "Piercing Gaze \ud83e\udd85",
+        "Charming Smile \u2728",
+        "Serving looks \ud83d\udc85",
+        "Immaculate style \ud83e\ude9e",
+        "High Quality \ud83d\udcf8",
+        "Crisp \ud83c\udfa5",
+        "Dynamic \u26a1",
+        "Main-character energy \ud83d\udcab",
+        "Bold \ud83c\udf36\ufe0f",
+        "Breaking the Internet \ud83c\udf10"
+    ],
+    "face": {
+        "score": 878,
+        "confidence": 0.9,
+        "primaryTraits": [
+            "Symmetrical Features \ud83d\udcd0"
+        ],
+        "components": [
+            {
+                "attribute": "Facial Symmetry",
+                "measurement": "43.9%",
+                "scoreImpact": 878,
+                "description": "Calculated based on the structural balance of your facial landmarks. Higher is more symmetrical."
+            },
+            {
+                "attribute": "Head Yaw Angle",
+                "measurement": "-31.8\u00b0",
+                "scoreImpact": 800,
+                "description": "Looking away adds an element of mystery to the portrait."
+            }
+        ]
+    },
+    "eyes": {
+        "score": 1000,
+        "confidence": 0.7,
+        "primaryTraits": [
+            "Piercing Gaze \ud83e\udd85"
+        ],
+        "components": []
+    },
+    "expression": {
+        "score": 1500,
+        "confidence": 0.6712751984596252,
+        "primaryTraits": [
+            "Charming Smile \u2728"
+        ],
+        "components": [
+            {
+                "attribute": "Smile Probability",
+                "measurement": "67.1%",
+                "scoreImpact": 1500,
+                "description": "A glowing, confident smile was detected."
+            }
+        ]
+    },
+    "body": {
+        "score": 0,
+        "confidence": 0.0,
+        "primaryTraits": [],
+        "components": []
+    },
+    "posture": {
+        "score": 0,
+        "confidence": 0.0,
+        "primaryTraits": [],
+        "components": []
+    },
+    "pose": {
+        "score": 350,
+        "confidence": 0.7,
+        "primaryTraits": [
+            "Dynamic \u26a1"
+        ],
+        "components": [
+            {
+                "attribute": "Dynamism",
+                "measurement": "50%",
+                "scoreImpact": 350,
+                "description": "Pose energy and non-static presentation."
+            }
+        ]
+    },
+    "style": {
+        "score": 1170,
+        "confidence": 0.8,
+        "primaryTraits": [
+            "Serving looks \ud83d\udc85",
+            "Immaculate style \ud83e\ude9e"
+        ],
+        "components": [
+            {
+                "attribute": "Styling Score",
+                "measurement": "77%",
+                "scoreImpact": 770,
+                "description": "Overall fashion and composition aesthetic."
+            },
+            {
+                "attribute": "Apparel Complexity",
+                "measurement": "2 items",
+                "scoreImpact": 200,
+                "description": "Bonus for complex outfits and accessories."
+            },
+            {
+                "attribute": "Dominant Emotion",
+                "measurement": "fear",
+                "scoreImpact": 200,
+                "description": "Non-neutral engaging emotion detected."
+            }
+        ]
+    },
+    "image": {
+        "score": 1920,
+        "confidence": 0.9,
+        "primaryTraits": [
+            "High Quality \ud83d\udcf8",
+            "Crisp \ud83c\udfa5"
+        ],
+        "components": [
+            {
+                "attribute": "Base Quality",
+                "measurement": "Standard",
+                "scoreImpact": 500,
+                "description": "Baseline image processing score."
+            },
+            {
+                "attribute": "Lighting Quality",
+                "measurement": "60%",
+                "scoreImpact": 600,
+                "description": "Evaluation of image exposure and illumination."
+            },
+            {
+                "attribute": "Skin Smoothness",
+                "measurement": "80%",
+                "scoreImpact": 400,
+                "description": "Skin texture clarity and smoothness."
+            },
+            {
+                "attribute": "Hair Volume",
+                "measurement": "84%",
+                "scoreImpact": 420,
+                "description": "Proportion of hair volume relative to face size."
+            }
+        ]
+    },
+    "presence": {
+        "score": 662,
+        "confidence": 0.85,
+        "primaryTraits": [
+            "Main-character energy \ud83d\udcab"
+        ],
+        "components": [
+            {
+                "attribute": "Overall Multiplier",
+                "measurement": "10%",
+                "scoreImpact": 662,
+                "description": "Aura presence scales directly with all accumulated points."
+            }
+        ]
+    },
+    "content": {
+        "score": 48,
+        "confidence": 0.95,
+        "primaryTraits": [],
+        "components": []
+    }
+}

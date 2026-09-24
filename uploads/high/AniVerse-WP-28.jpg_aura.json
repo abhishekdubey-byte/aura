@@ -1,0 +1,191 @@
+{
+    "filename": "AniVerse-WP-28.jpg",
+    "original_path": "/storage/emulated/0/Download/SAMPLEDATAIMAGES/AniVerse-WP-28.jpg",
+    "score": 57231,
+    "isBodyOnly": false,
+    "bodyShape": "Portrait Mode \ud83d\udcf8",
+    "bodyShapeConfidence": 0.8,
+    "rawMetrics": {
+        "Face Symmetry": 0.849,
+        "Smile Probability": 0.41
+    },
+    "allSlangs": [
+        "Sigma Stare \ud83d\uddff",
+        "Symmetrical Features \ud83d\udcd0",
+        "Piercing Gaze \ud83e\udd85",
+        "Neutral \ud83d\ude10",
+        "Shredded \ud83d\udd31",
+        "Absolute Unit \ud83d\udcaa",
+        "Serving looks \ud83d\udc85",
+        "Immaculate style \ud83e\ude9e",
+        "High Quality \ud83d\udcf8",
+        "Crisp \ud83c\udfa5",
+        "Dynamic \u26a1",
+        "Main-character energy \ud83d\udcab",
+        "Absolute Nudity \ud83d\udd25\ud83d\udd25",
+        "Too Hot For Instagram \ud83d\udeab",
+        "OnlyFans Top 0.1% \ud83d\udcb8",
+        "Bold \ud83c\udf36\ufe0f",
+        "Breaking the Internet \ud83c\udf10"
+    ],
+    "face": {
+        "score": 1699,
+        "confidence": 0.9,
+        "primaryTraits": [
+            "Symmetrical Features \ud83d\udcd0"
+        ],
+        "components": [
+            {
+                "attribute": "Facial Symmetry",
+                "measurement": "84.9%",
+                "scoreImpact": 1699,
+                "description": "Calculated based on the structural balance of your facial landmarks. Higher is more symmetrical."
+            },
+            {
+                "attribute": "Head Yaw Angle",
+                "measurement": "3.5\u00b0",
+                "scoreImpact": 1500,
+                "description": "Direct eye contact detected. Boosts aura presence significantly."
+            }
+        ]
+    },
+    "eyes": {
+        "score": 1000,
+        "confidence": 0.7,
+        "primaryTraits": [
+            "Piercing Gaze \ud83e\udd85"
+        ],
+        "components": []
+    },
+    "expression": {
+        "score": 800,
+        "confidence": 0.8,
+        "primaryTraits": [
+            "Neutral \ud83d\ude10"
+        ],
+        "components": []
+    },
+    "body": {
+        "score": 0,
+        "confidence": 0.0,
+        "primaryTraits": [],
+        "components": []
+    },
+    "posture": {
+        "score": 0,
+        "confidence": 0.0,
+        "primaryTraits": [],
+        "components": []
+    },
+    "pose": {
+        "score": 350,
+        "confidence": 0.7,
+        "primaryTraits": [
+            "Dynamic \u26a1"
+        ],
+        "components": [
+            {
+                "attribute": "Dynamism",
+                "measurement": "50%",
+                "scoreImpact": 350,
+                "description": "Pose energy and non-static presentation."
+            }
+        ]
+    },
+    "style": {
+        "score": 1270,
+        "confidence": 0.8,
+        "primaryTraits": [
+            "Serving looks \ud83d\udc85",
+            "Immaculate style \ud83e\ude9e"
+        ],
+        "components": [
+            {
+                "attribute": "Muscular Definition",
+                "measurement": "High",
+                "scoreImpact": 2000,
+                "description": "Muscle tone or barechested aesthetics detected."
+            },
+            {
+                "attribute": "Styling Score",
+                "measurement": "77%",
+                "scoreImpact": 770,
+                "description": "Overall fashion and composition aesthetic."
+            },
+            {
+                "attribute": "Apparel Complexity",
+                "measurement": "3 items",
+                "scoreImpact": 300,
+                "description": "Bonus for complex outfits and accessories."
+            },
+            {
+                "attribute": "Dominant Emotion",
+                "measurement": "sad",
+                "scoreImpact": 200,
+                "description": "Non-neutral engaging emotion detected."
+            }
+        ]
+    },
+    "image": {
+        "score": 1830,
+        "confidence": 0.9,
+        "primaryTraits": [
+            "High Quality \ud83d\udcf8",
+            "Crisp \ud83c\udfa5"
+        ],
+        "components": [
+            {
+                "attribute": "Base Quality",
+                "measurement": "Standard",
+                "scoreImpact": 500,
+                "description": "Baseline image processing score."
+            },
+            {
+                "attribute": "Lighting Quality",
+                "measurement": "60%",
+                "scoreImpact": 600,
+                "description": "Evaluation of image exposure and illumination."
+            },
+            {
+                "attribute": "Skin Smoothness",
+                "measurement": "70%",
+                "scoreImpact": 350,
+                "description": "Skin texture clarity and smoothness."
+            },
+            {
+                "attribute": "Hair Volume",
+                "measurement": "76%",
+                "scoreImpact": 380,
+                "description": "Proportion of hair volume relative to face size."
+            }
+        ]
+    },
+    "presence": {
+        "score": 865,
+        "confidence": 0.85,
+        "primaryTraits": [
+            "Main-character energy \ud83d\udcab"
+        ],
+        "components": [
+            {
+                "attribute": "Overall Multiplier",
+                "measurement": "10%",
+                "scoreImpact": 865,
+                "description": "Aura presence scales directly with all accumulated points."
+            }
+        ]
+    },
+    "content": {
+        "score": 86,
+        "confidence": 0.95,
+        "primaryTraits": [],
+        "components": [
+            {
+                "attribute": "Provocative Bonus",
+                "measurement": "Explicit",
+                "scoreImpact": 34510,
+                "description": "Massive aura amplification for bold explicit content."
+            }
+        ]
+    }
+}

@@ -1,0 +1,168 @@
+{
+    "filename": "download_img (1).png",
+    "original_path": "/storage/emulated/0/Download/SAMPLEDATAIMAGES/download_img (1).png",
+    "score": 11340,
+    "isBodyOnly": true,
+    "bodyShape": "Athletic V-Taper \ud83d\udcd0",
+    "bodyShapeConfidence": 0.8,
+    "rawMetrics": {
+        "Waist-to-Hip Ratio": 0.495,
+        "Waist-to-Shoulder Ratio": 0.648,
+        "Hip-to-Shoulder Ratio": 1.309,
+        "Chest-to-Waist Ratio": 1.543,
+        "Thigh Fullness": 1.887,
+        "Calf-to-Thigh Ratio": 0.989
+    },
+    "allSlangs": [
+        "Athletic V-Taper \ud83d\udcd0",
+        "Greek God Physique \ud83c\udfdb\ufe0f",
+        "Insane V-Taper \ud83d\udd3b",
+        "Confident form \u2728",
+        "Strong posture \ud83d\udc51",
+        "Serving looks \ud83d\udc85",
+        "Immaculate style \ud83e\ude9e",
+        "High Quality \ud83d\udcf8",
+        "Crisp \ud83c\udfa5",
+        "Dynamic \u26a1",
+        "Main-character energy \ud83d\udcab",
+        "Bold \ud83c\udf36\ufe0f",
+        "Breaking the Internet \ud83c\udf10"
+    ],
+    "face": null,
+    "eyes": null,
+    "expression": null,
+    "body": {
+        "score": 3500,
+        "confidence": 0.85,
+        "primaryTraits": [
+            "Confident form \u2728"
+        ],
+        "components": [
+            {
+                "attribute": "Base Frame",
+                "measurement": "Detected",
+                "scoreImpact": 500,
+                "description": "Subject body frame identified in image."
+            },
+            {
+                "attribute": "V-Taper Ratio",
+                "measurement": "1.54",
+                "scoreImpact": 3000,
+                "description": "Elite shoulder-to-waist ratio indicating an athletic V-taper."
+            }
+        ]
+    },
+    "posture": {
+        "score": 800,
+        "confidence": 0.9,
+        "primaryTraits": [
+            "Strong posture \ud83d\udc51"
+        ],
+        "components": [
+            {
+                "attribute": "Posture Alignment",
+                "measurement": "40.0%",
+                "scoreImpact": 800,
+                "description": "Shoulder and torso alignment derived from pose detection."
+            }
+        ]
+    },
+    "pose": {
+        "score": 320,
+        "confidence": 0.7,
+        "primaryTraits": [
+            "Dynamic \u26a1"
+        ],
+        "components": [
+            {
+                "attribute": "Dynamism",
+                "measurement": "40%",
+                "scoreImpact": 320,
+                "description": "Pose energy and non-static presentation."
+            }
+        ]
+    },
+    "style": {
+        "score": 1270,
+        "confidence": 0.8,
+        "primaryTraits": [
+            "Serving looks \ud83d\udc85",
+            "Immaculate style \ud83e\ude9e"
+        ],
+        "components": [
+            {
+                "attribute": "Styling Score",
+                "measurement": "77%",
+                "scoreImpact": 770,
+                "description": "Overall fashion and composition aesthetic."
+            },
+            {
+                "attribute": "Apparel Complexity",
+                "measurement": "3 items",
+                "scoreImpact": 300,
+                "description": "Bonus for complex outfits and accessories."
+            },
+            {
+                "attribute": "Dominant Emotion",
+                "measurement": "fear",
+                "scoreImpact": 200,
+                "description": "Non-neutral engaging emotion detected."
+            }
+        ]
+    },
+    "image": {
+        "score": 2040,
+        "confidence": 0.9,
+        "primaryTraits": [
+            "High Quality \ud83d\udcf8",
+            "Crisp \ud83c\udfa5"
+        ],
+        "components": [
+            {
+                "attribute": "Base Quality",
+                "measurement": "Standard",
+                "scoreImpact": 500,
+                "description": "Baseline image processing score."
+            },
+            {
+                "attribute": "Lighting Quality",
+                "measurement": "90%",
+                "scoreImpact": 900,
+                "description": "Evaluation of image exposure and illumination."
+            },
+            {
+                "attribute": "Skin Smoothness",
+                "measurement": "60%",
+                "scoreImpact": 300,
+                "description": "Skin texture clarity and smoothness."
+            },
+            {
+                "attribute": "Hair Volume",
+                "measurement": "68%",
+                "scoreImpact": 340,
+                "description": "Proportion of hair volume relative to face size."
+            }
+        ]
+    },
+    "presence": {
+        "score": 793,
+        "confidence": 0.85,
+        "primaryTraits": [
+            "Main-character energy \ud83d\udcab"
+        ],
+        "components": [
+            {
+                "attribute": "Overall Multiplier",
+                "measurement": "10%",
+                "scoreImpact": 793,
+                "description": "Aura presence scales directly with all accumulated points."
+            }
+        ]
+    },
+    "content": {
+        "score": 5,
+        "confidence": 0.95,
+        "primaryTraits": [],
+        "components": []
+    }
+}

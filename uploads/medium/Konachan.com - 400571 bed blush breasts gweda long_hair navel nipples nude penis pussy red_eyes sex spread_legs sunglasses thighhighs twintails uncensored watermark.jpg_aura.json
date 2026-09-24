@@ -1,0 +1,181 @@
+{
+    "filename": "Konachan.com - 400571 bed blush breasts gweda long_hair navel nipples nude penis pussy red_eyes sex spread_legs sunglasses thighhighs twintails uncensored watermark.jpg",
+    "original_path": "/storage/emulated/0/Download/SAMPLEDATAIMAGES/Konachan.com - 400571 bed blush breasts gweda long_hair navel nipples nude penis pussy red_eyes sex spread_legs sunglasses thighhighs twintails uncensored watermark.jpg",
+    "score": 18672,
+    "isBodyOnly": true,
+    "bodyShape": "Petite model proportions \u2728",
+    "bodyShapeConfidence": 0.8,
+    "rawMetrics": {
+        "Waist-to-Hip Ratio": 1.0,
+        "Waist-to-Shoulder Ratio": 1.0,
+        "Hip-to-Shoulder Ratio": 1.0,
+        "Bust-to-Waist Ratio": 1.0,
+        "Thigh Fullness": 0.998,
+        "Neck-to-Shoulder Ratio": 0.332,
+        "Calf-to-Thigh Ratio": 1.0
+    },
+    "allSlangs": [
+        "Petite model proportions \u2728",
+        "Juicy Thighs \ud83d\udd25",
+        "Confident form \u2728",
+        "Strong posture \ud83d\udc51",
+        "Serving looks \ud83d\udc85",
+        "Immaculate style \ud83e\ude9e",
+        "High Quality \ud83d\udcf8",
+        "Crisp \ud83c\udfa5",
+        "Dynamic \u26a1",
+        "Main-character energy \ud83d\udcab",
+        "Baddie \ud83e\udd75",
+        "Breaking the Internet \ud83c\udf10"
+    ],
+    "face": null,
+    "eyes": null,
+    "expression": null,
+    "body": {
+        "score": 2500,
+        "confidence": 0.85,
+        "primaryTraits": [
+            "Confident form \u2728"
+        ],
+        "components": [
+            {
+                "attribute": "Base Frame",
+                "measurement": "Detected",
+                "scoreImpact": 500,
+                "description": "Subject body frame identified in image."
+            },
+            {
+                "attribute": "Thigh Fullness",
+                "measurement": "1.00",
+                "scoreImpact": 2000,
+                "description": "Good leg proportions and fullness."
+            }
+        ]
+    },
+    "posture": {
+        "score": 800,
+        "confidence": 0.9,
+        "primaryTraits": [
+            "Strong posture \ud83d\udc51"
+        ],
+        "components": [
+            {
+                "attribute": "Posture Alignment",
+                "measurement": "40.0%",
+                "scoreImpact": 800,
+                "description": "Shoulder and torso alignment derived from pose detection."
+            }
+        ]
+    },
+    "pose": {
+        "score": 320,
+        "confidence": 0.7,
+        "primaryTraits": [
+            "Dynamic \u26a1"
+        ],
+        "components": [
+            {
+                "attribute": "Dynamism",
+                "measurement": "40%",
+                "scoreImpact": 320,
+                "description": "Pose energy and non-static presentation."
+            }
+        ]
+    },
+    "style": {
+        "score": 1170,
+        "confidence": 0.8,
+        "primaryTraits": [
+            "Serving looks \ud83d\udc85",
+            "Immaculate style \ud83e\ude9e"
+        ],
+        "components": [
+            {
+                "attribute": "Styling Score",
+                "measurement": "77%",
+                "scoreImpact": 770,
+                "description": "Overall fashion and composition aesthetic."
+            },
+            {
+                "attribute": "Apparel Complexity",
+                "measurement": "2 items",
+                "scoreImpact": 200,
+                "description": "Bonus for complex outfits and accessories."
+            },
+            {
+                "attribute": "Dominant Emotion",
+                "measurement": "fear",
+                "scoreImpact": 200,
+                "description": "Non-neutral engaging emotion detected."
+            }
+        ]
+    },
+    "image": {
+        "score": 2220,
+        "confidence": 0.9,
+        "primaryTraits": [
+            "High Quality \ud83d\udcf8",
+            "Crisp \ud83c\udfa5"
+        ],
+        "components": [
+            {
+                "attribute": "Base Quality",
+                "measurement": "Standard",
+                "scoreImpact": 500,
+                "description": "Baseline image processing score."
+            },
+            {
+                "attribute": "Lighting Quality",
+                "measurement": "90%",
+                "scoreImpact": 900,
+                "description": "Evaluation of image exposure and illumination."
+            },
+            {
+                "attribute": "Skin Smoothness",
+                "measurement": "80%",
+                "scoreImpact": 400,
+                "description": "Skin texture clarity and smoothness."
+            },
+            {
+                "attribute": "Hair Volume",
+                "measurement": "84%",
+                "scoreImpact": 420,
+                "description": "Proportion of hair volume relative to face size."
+            }
+        ]
+    },
+    "presence": {
+        "score": 6753,
+        "confidence": 0.85,
+        "primaryTraits": [
+            "Main-character energy \ud83d\udcab"
+        ],
+        "components": [
+            {
+                "attribute": "Overall Multiplier",
+                "measurement": "25%",
+                "scoreImpact": 1753,
+                "description": "Aura presence scales directly with all accumulated points."
+            },
+            {
+                "attribute": "Divine Feminine Bonus",
+                "measurement": "Active",
+                "scoreImpact": 5000,
+                "description": "Inherent aura boost for female presence."
+            }
+        ]
+    },
+    "content": {
+        "score": 47,
+        "confidence": 0.95,
+        "primaryTraits": [],
+        "components": [
+            {
+                "attribute": "Implied Curves (Thighs)",
+                "measurement": "1.00",
+                "scoreImpact": 600,
+                "description": "Subtle bonus for aesthetic proportions."
+            }
+        ]
+    }
+}

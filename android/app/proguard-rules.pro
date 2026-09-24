@@ -1,0 +1,4 @@
+-keep class androidx.work.** { *; }
+-keep class androidx.room.** { *; }
+-keep class androidx.sqlite.db.** { *; }
+-keep class androidx.startup.** { *; }

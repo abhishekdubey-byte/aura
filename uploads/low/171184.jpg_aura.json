@@ -1,0 +1,208 @@
+{
+    "filename": "171184.jpg",
+    "original_path": "/storage/emulated/0/Download/SAMPLEDATAIMAGES/171184.jpg",
+    "score": 13060,
+    "isBodyOnly": false,
+    "bodyShape": "Dad Bod \ud83c\udf7a",
+    "bodyShapeConfidence": 0.8,
+    "rawMetrics": {
+        "Face Symmetry": 0.952,
+        "Smile Probability": 0.005,
+        "Waist-to-Hip Ratio": 0.964,
+        "Waist-to-Shoulder Ratio": 1.002,
+        "Hip-to-Shoulder Ratio": 1.039,
+        "Chest-to-Waist Ratio": 1.015,
+        "Thigh Fullness": 0.0,
+        "Neck-to-Shoulder Ratio": 0.343
+    },
+    "allSlangs": [
+        "Sigma Stare \ud83d\uddff",
+        "Absolute Chad \ud83d\uddff",
+        "Symmetrical Features \ud83d\udcd0",
+        "Piercing Gaze \ud83e\udd85",
+        "Stoic \ud83e\uddca",
+        "Dad Bod \ud83c\udf7a",
+        "Confident form \u2728",
+        "Strong posture \ud83d\udc51",
+        "Serving looks \ud83d\udc85",
+        "Immaculate style \ud83e\ude9e",
+        "High Quality \ud83d\udcf8",
+        "Crisp \ud83c\udfa5",
+        "Dynamic \u26a1",
+        "Main-character energy \ud83d\udcab",
+        "Bold \ud83c\udf36\ufe0f",
+        "Breaking the Internet \ud83c\udf10"
+    ],
+    "face": {
+        "score": 1904,
+        "confidence": 0.9,
+        "primaryTraits": [
+            "Symmetrical Features \ud83d\udcd0"
+        ],
+        "components": [
+            {
+                "attribute": "Facial Symmetry",
+                "measurement": "95.2%",
+                "scoreImpact": 1904,
+                "description": "Calculated based on the structural balance of your facial landmarks. Higher is more symmetrical."
+            },
+            {
+                "attribute": "Head Yaw Angle",
+                "measurement": "-0.7\u00b0",
+                "scoreImpact": 1500,
+                "description": "Direct eye contact detected. Boosts aura presence significantly."
+            }
+        ]
+    },
+    "eyes": {
+        "score": 1000,
+        "confidence": 0.7,
+        "primaryTraits": [
+            "Piercing Gaze \ud83e\udd85"
+        ],
+        "components": []
+    },
+    "expression": {
+        "score": 1000,
+        "confidence": 0.9945811131037772,
+        "primaryTraits": [
+            "Stoic \ud83e\uddca"
+        ],
+        "components": [
+            {
+                "attribute": "Smile Probability",
+                "measurement": "0.5%",
+                "scoreImpact": 1000,
+                "description": "Stoic, relaxed facial expression detected."
+            }
+        ]
+    },
+    "body": {
+        "score": 500,
+        "confidence": 0.85,
+        "primaryTraits": [
+            "Confident form \u2728"
+        ],
+        "components": [
+            {
+                "attribute": "Base Frame",
+                "measurement": "Detected",
+                "scoreImpact": 500,
+                "description": "Subject body frame identified in image."
+            }
+        ]
+    },
+    "posture": {
+        "score": 600,
+        "confidence": 0.9,
+        "primaryTraits": [
+            "Strong posture \ud83d\udc51"
+        ],
+        "components": [
+            {
+                "attribute": "Posture Alignment",
+                "measurement": "30.0%",
+                "scoreImpact": 600,
+                "description": "Shoulder and torso alignment derived from pose detection."
+            }
+        ]
+    },
+    "pose": {
+        "score": 290,
+        "confidence": 0.7,
+        "primaryTraits": [
+            "Dynamic \u26a1"
+        ],
+        "components": [
+            {
+                "attribute": "Dynamism",
+                "measurement": "30%",
+                "scoreImpact": 290,
+                "description": "Pose energy and non-static presentation."
+            }
+        ]
+    },
+    "style": {
+        "score": 1299,
+        "confidence": 0.8,
+        "primaryTraits": [
+            "Serving looks \ud83d\udc85",
+            "Immaculate style \ud83e\ude9e"
+        ],
+        "components": [
+            {
+                "attribute": "Styling Score",
+                "measurement": "80%",
+                "scoreImpact": 799,
+                "description": "Overall fashion and composition aesthetic."
+            },
+            {
+                "attribute": "Apparel Complexity",
+                "measurement": "3 items",
+                "scoreImpact": 300,
+                "description": "Bonus for complex outfits and accessories."
+            },
+            {
+                "attribute": "Dominant Emotion",
+                "measurement": "fear",
+                "scoreImpact": 200,
+                "description": "Non-neutral engaging emotion detected."
+            }
+        ]
+    },
+    "image": {
+        "score": 2040,
+        "confidence": 0.9,
+        "primaryTraits": [
+            "High Quality \ud83d\udcf8",
+            "Crisp \ud83c\udfa5"
+        ],
+        "components": [
+            {
+                "attribute": "Base Quality",
+                "measurement": "Standard",
+                "scoreImpact": 500,
+                "description": "Baseline image processing score."
+            },
+            {
+                "attribute": "Lighting Quality",
+                "measurement": "90%",
+                "scoreImpact": 900,
+                "description": "Evaluation of image exposure and illumination."
+            },
+            {
+                "attribute": "Skin Smoothness",
+                "measurement": "60%",
+                "scoreImpact": 300,
+                "description": "Skin texture clarity and smoothness."
+            },
+            {
+                "attribute": "Hair Volume",
+                "measurement": "68%",
+                "scoreImpact": 340,
+                "description": "Proportion of hair volume relative to face size."
+            }
+        ]
+    },
+    "presence": {
+        "score": 913,
+        "confidence": 0.85,
+        "primaryTraits": [
+            "Main-character energy \ud83d\udcab"
+        ],
+        "components": [
+            {
+                "attribute": "Overall Multiplier",
+                "measurement": "10%",
+                "scoreImpact": 913,
+                "description": "Aura presence scales directly with all accumulated points."
+            }
+        ]
+    },
+    "content": {
+        "score": 76,
+        "confidence": 0.95,
+        "primaryTraits": [],
+        "components": []
+    }
+}

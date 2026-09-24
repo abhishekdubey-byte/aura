@@ -1,0 +1,11 @@
+{
+    "java.import.exclusions": [
+        "**/windows/flutter/ephemeral/.plugin_symlinks/**",
+        "**/linux/flutter/ephemeral/.plugin_symlinks/**",
+        "**/.pub-cache/**"
+    ],
+    "files.watcherExclude": {
+        "**/.plugin_symlinks/**": true,
+        "**/.pub-cache/**": true
+    }
+}

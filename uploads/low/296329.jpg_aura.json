@@ -1,0 +1,161 @@
+{
+    "filename": "296329.jpg",
+    "original_path": "/storage/emulated/0/Download/SAMPLEDATAIMAGES/296329.jpg",
+    "score": 5331,
+    "isBodyOnly": true,
+    "bodyShape": "Built like a Tank \ud83d\udee1\ufe0f",
+    "bodyShapeConfidence": 0.8,
+    "rawMetrics": {
+        "Waist-to-Hip Ratio": 1.067,
+        "Waist-to-Shoulder Ratio": 0.945,
+        "Hip-to-Shoulder Ratio": 0.886,
+        "Chest-to-Waist Ratio": 1.058,
+        "Thigh Fullness": 0.996,
+        "Neck-to-Shoulder Ratio": 0.331,
+        "Calf-to-Thigh Ratio": 0.994
+    },
+    "allSlangs": [
+        "Built like a Tank \ud83d\udee1\ufe0f",
+        "Confident form \u2728",
+        "Strong posture \ud83d\udc51",
+        "Serving looks \ud83d\udc85",
+        "Immaculate style \ud83e\ude9e",
+        "High Quality \ud83d\udcf8",
+        "Crisp \ud83c\udfa5",
+        "Dynamic \u26a1",
+        "Main-character energy \ud83d\udcab",
+        "Bold \ud83c\udf36\ufe0f",
+        "Breaking the Internet \ud83c\udf10"
+    ],
+    "face": null,
+    "eyes": null,
+    "expression": null,
+    "body": {
+        "score": 500,
+        "confidence": 0.85,
+        "primaryTraits": [
+            "Confident form \u2728"
+        ],
+        "components": [
+            {
+                "attribute": "Base Frame",
+                "measurement": "Detected",
+                "scoreImpact": 500,
+                "description": "Subject body frame identified in image."
+            }
+        ]
+    },
+    "posture": {
+        "score": 1000,
+        "confidence": 0.9,
+        "primaryTraits": [
+            "Strong posture \ud83d\udc51"
+        ],
+        "components": [
+            {
+                "attribute": "Posture Alignment",
+                "measurement": "50.0%",
+                "scoreImpact": 1000,
+                "description": "Shoulder and torso alignment derived from pose detection."
+            }
+        ]
+    },
+    "pose": {
+        "score": 350,
+        "confidence": 0.7,
+        "primaryTraits": [
+            "Dynamic \u26a1"
+        ],
+        "components": [
+            {
+                "attribute": "Dynamism",
+                "measurement": "50%",
+                "scoreImpact": 350,
+                "description": "Pose energy and non-static presentation."
+            }
+        ]
+    },
+    "style": {
+        "score": 1076,
+        "confidence": 0.8,
+        "primaryTraits": [
+            "Serving looks \ud83d\udc85",
+            "Immaculate style \ud83e\ude9e"
+        ],
+        "components": [
+            {
+                "attribute": "Styling Score",
+                "measurement": "68%",
+                "scoreImpact": 676,
+                "description": "Overall fashion and composition aesthetic."
+            },
+            {
+                "attribute": "Apparel Complexity",
+                "measurement": "2 items",
+                "scoreImpact": 200,
+                "description": "Bonus for complex outfits and accessories."
+            },
+            {
+                "attribute": "Dominant Emotion",
+                "measurement": "fear",
+                "scoreImpact": 200,
+                "description": "Non-neutral engaging emotion detected."
+            }
+        ]
+    },
+    "image": {
+        "score": 1920,
+        "confidence": 0.9,
+        "primaryTraits": [
+            "High Quality \ud83d\udcf8",
+            "Crisp \ud83c\udfa5"
+        ],
+        "components": [
+            {
+                "attribute": "Base Quality",
+                "measurement": "Standard",
+                "scoreImpact": 500,
+                "description": "Baseline image processing score."
+            },
+            {
+                "attribute": "Lighting Quality",
+                "measurement": "60%",
+                "scoreImpact": 600,
+                "description": "Evaluation of image exposure and illumination."
+            },
+            {
+                "attribute": "Skin Smoothness",
+                "measurement": "80%",
+                "scoreImpact": 400,
+                "description": "Skin texture clarity and smoothness."
+            },
+            {
+                "attribute": "Hair Volume",
+                "measurement": "84%",
+                "scoreImpact": 420,
+                "description": "Proportion of hair volume relative to face size."
+            }
+        ]
+    },
+    "presence": {
+        "score": 485,
+        "confidence": 0.85,
+        "primaryTraits": [
+            "Main-character energy \ud83d\udcab"
+        ],
+        "components": [
+            {
+                "attribute": "Overall Multiplier",
+                "measurement": "10%",
+                "scoreImpact": 485,
+                "description": "Aura presence scales directly with all accumulated points."
+            }
+        ]
+    },
+    "content": {
+        "score": 55,
+        "confidence": 0.95,
+        "primaryTraits": [],
+        "components": []
+    }
+}

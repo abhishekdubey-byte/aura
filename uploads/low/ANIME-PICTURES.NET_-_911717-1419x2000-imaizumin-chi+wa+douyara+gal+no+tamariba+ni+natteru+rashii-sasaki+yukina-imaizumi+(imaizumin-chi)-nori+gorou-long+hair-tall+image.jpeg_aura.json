@@ -1,0 +1,180 @@
+{
+    "filename": "ANIME-PICTURES.NET_-_911717-1419x2000-imaizumin-chi+wa+douyara+gal+no+tamariba+ni+natteru+rashii-sasaki+yukina-imaizumi+(imaizumin-chi)-nori+gorou-long+hair-tall+image.jpeg",
+    "original_path": "/storage/emulated/0/Download/SAMPLEDATAIMAGES/hqnew/ANIME-PICTURES.NET_-_911717-1419x2000-imaizumin-chi+wa+douyara+gal+no+tamariba+ni+natteru+rashii-sasaki+yukina-imaizumi+(imaizumin-chi)-nori+gorou-long+hair-tall+image.jpeg",
+    "score": 7944,
+    "isBodyOnly": false,
+    "bodyShape": "Portrait Mode \ud83d\udcf8",
+    "bodyShapeConfidence": 0.8,
+    "rawMetrics": {
+        "Face Symmetry": 0.807,
+        "Smile Probability": 0.986
+    },
+    "allSlangs": [
+        "Golden Retriever Energy \ud83d\udc36",
+        "Symmetrical Features \ud83d\udcd0",
+        "Piercing Gaze \ud83e\udd85",
+        "Charming Smile \u2728",
+        "Serving looks \ud83d\udc85",
+        "Immaculate style \ud83e\ude9e",
+        "High Quality \ud83d\udcf8",
+        "Crisp \ud83c\udfa5",
+        "Dynamic \u26a1",
+        "Main-character energy \ud83d\udcab",
+        "Bold \ud83c\udf36\ufe0f",
+        "Breaking the Internet \ud83c\udf10"
+    ],
+    "face": {
+        "score": 1613,
+        "confidence": 0.9,
+        "primaryTraits": [
+            "Symmetrical Features \ud83d\udcd0"
+        ],
+        "components": [
+            {
+                "attribute": "Facial Symmetry",
+                "measurement": "80.7%",
+                "scoreImpact": 1613,
+                "description": "Calculated based on the structural balance of your facial landmarks. Higher is more symmetrical."
+            }
+        ]
+    },
+    "eyes": {
+        "score": 1000,
+        "confidence": 0.7,
+        "primaryTraits": [
+            "Piercing Gaze \ud83e\udd85"
+        ],
+        "components": []
+    },
+    "expression": {
+        "score": 1500,
+        "confidence": 0.9863819479942322,
+        "primaryTraits": [
+            "Charming Smile \u2728"
+        ],
+        "components": [
+            {
+                "attribute": "Smile Probability",
+                "measurement": "98.6%",
+                "scoreImpact": 1500,
+                "description": "A glowing, confident smile was detected."
+            }
+        ]
+    },
+    "body": {
+        "score": 0,
+        "confidence": 0.0,
+        "primaryTraits": [],
+        "components": []
+    },
+    "posture": {
+        "score": 0,
+        "confidence": 0.0,
+        "primaryTraits": [],
+        "components": []
+    },
+    "pose": {
+        "score": 350,
+        "confidence": 0.7,
+        "primaryTraits": [
+            "Dynamic \u26a1"
+        ],
+        "components": [
+            {
+                "attribute": "Dynamism",
+                "measurement": "50%",
+                "scoreImpact": 350,
+                "description": "Pose energy and non-static presentation."
+            }
+        ]
+    },
+    "style": {
+        "score": 1449,
+        "confidence": 0.8,
+        "primaryTraits": [
+            "Serving looks \ud83d\udc85",
+            "Immaculate style \ud83e\ude9e"
+        ],
+        "components": [
+            {
+                "attribute": "Styling Score",
+                "measurement": "75%",
+                "scoreImpact": 749,
+                "description": "Overall fashion and composition aesthetic."
+            },
+            {
+                "attribute": "Glamorous Makeup",
+                "measurement": "Yes",
+                "scoreImpact": 300,
+                "description": "Makeup application detected."
+            },
+            {
+                "attribute": "Apparel Complexity",
+                "measurement": "2 items",
+                "scoreImpact": 200,
+                "description": "Bonus for complex outfits and accessories."
+            },
+            {
+                "attribute": "Dominant Emotion",
+                "measurement": "sad",
+                "scoreImpact": 200,
+                "description": "Non-neutral engaging emotion detected."
+            }
+        ]
+    },
+    "image": {
+        "score": 2310,
+        "confidence": 0.9,
+        "primaryTraits": [
+            "High Quality \ud83d\udcf8",
+            "Crisp \ud83c\udfa5"
+        ],
+        "components": [
+            {
+                "attribute": "Base Quality",
+                "measurement": "Standard",
+                "scoreImpact": 500,
+                "description": "Baseline image processing score."
+            },
+            {
+                "attribute": "Lighting Quality",
+                "measurement": "90%",
+                "scoreImpact": 900,
+                "description": "Evaluation of image exposure and illumination."
+            },
+            {
+                "attribute": "Skin Smoothness",
+                "measurement": "90%",
+                "scoreImpact": 450,
+                "description": "Skin texture clarity and smoothness."
+            },
+            {
+                "attribute": "Hair Volume",
+                "measurement": "92%",
+                "scoreImpact": 460,
+                "description": "Proportion of hair volume relative to face size."
+            }
+        ]
+    },
+    "presence": {
+        "score": 722,
+        "confidence": 0.85,
+        "primaryTraits": [
+            "Main-character energy \ud83d\udcab"
+        ],
+        "components": [
+            {
+                "attribute": "Overall Multiplier",
+                "measurement": "10%",
+                "scoreImpact": 722,
+                "description": "Aura presence scales directly with all accumulated points."
+            }
+        ]
+    },
+    "content": {
+        "score": 67,
+        "confidence": 0.95,
+        "primaryTraits": [],
+        "components": []
+    }
+}
