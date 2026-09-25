@@ -1,59 +1,38 @@
-import 'dart:math';
 import 'dart:io';
+import 'dart:math';
+
 import 'package:flutter/foundation.dart';
 import 'package:image/image.dart' as img;
-import 'package:aura/geometry/silhouette_math.dart';
+import 'package:path_provider/path_provider.dart';
 import 'package:google_mlkit_face_detection/google_mlkit_face_detection.dart';
-import 'package:google_mlkit_pose_detection/google_mlkit_pose_detection.dart';
 import 'package:google_mlkit_image_labeling/google_mlkit_image_labeling.dart';
+import 'package:google_mlkit_pose_detection/google_mlkit_pose_detection.dart';
 import 'package:google_mlkit_subject_segmentation/google_mlkit_subject_segmentation.dart';
-import 'scorers/aura_engine.dart';
-import 'utils/gender_predictor.dart';
-import 'utils/advanced_inference_service.dart';
+
+import 'aura/face_analysis.dart';
+import 'aura/model_runner.dart';
+import 'aura/pixel_analysis.dart';
+import 'aura/pose_analysis.dart';
+import 'aura/silhouette_analysis.dart';
 import 'models/analysis_image.dart';
 import 'models/detailed_aura_score.dart';
-
-class ImageDimensions {
-  final int width;
-  final int height;
-  ImageDimensions(this.width, this.height);
-}
-class SnapshotState {
-  final DetailedAuraScore details;
-  final String? hypeMessage;
-  final Point<double>? targetPoint;
-  final DateTime timestamp;
-  final Set<String> objectLabels;
-  final double faceRatio;
-  final double bodyRatio;
-  final double genderProbability;
-  
-  // Expression tracking for intentionality check
-  final double smileProb;
-  final double yaw;
-  final double tilt;
-
-  SnapshotState({
-    required this.details,
-    this.hypeMessage,
-    this.targetPoint,
-    required this.timestamp,
-    required this.objectLabels,
-    required this.faceRatio,
-    required this.bodyRatio,
-    required this.genderProbability,
-    required this.smileProb,
-    required this.yaw,
-    required this.tilt,
-  });
-}
+import 'scorers/aura_engine.dart';
+import 'utils/gender_predictor.dart';
 
 class AuraResult {
   final int score;
   final bool hasHuman;
+  /// Point to highlight, in original-photo pixels.
   final Point<double>? targetPoint;
   final String? hypeMessage;
   final DetailedAuraScore? details;
+  /// Upright size of the analysed photo.
+  final int imageWidth;
+  final int imageHeight;
+  /// Set when the photo could not be analysed at all.
+  final String? error;
+  /// Why nobody was found, when the photo itself is the likely cause.
+  final String? hint;
 
   AuraResult({
     required this.score,
@@ -61,286 +40,237 @@ class AuraResult {
     this.targetPoint,
     this.hypeMessage,
     this.details,
+    this.imageWidth = 0,
+    this.imageHeight = 0,
+    this.error,
+    this.hint,
   });
 }
 
+/// Runs the Aura pipeline: one prepared image through ML Kit face, pose,
+/// labeling and subject segmentation, the emotion and content TFLite models,
+/// and pixel analysis, then scores the findings with [AuraEngine].
+///
+/// A single shared instance keeps every model loaded between photos.
 class AuraCalculatorService {
-  final FaceDetector _faceDetector = FaceDetector(options: FaceDetectorOptions(enableLandmarks: true, enableClassification: true, enableTracking: true));
-  final SubjectSegmenter _segmenter = SubjectSegmenter(options: SubjectSegmenterOptions(enableForegroundBitmap: false, enableForegroundConfidenceMask: true, enableMultipleSubjects: SubjectResultOptions(enableConfidenceMask: false, enableSubjectBitmap: false)));
-  final PoseDetector _poseDetector = PoseDetector(options: PoseDetectorOptions(mode: PoseDetectionMode.single));
-  final ImageLabeler _imageLabeler = ImageLabeler(options: ImageLabelerOptions());
-  
-  final AdvancedInferenceService _advancedInference = AdvancedInferenceService();
-  final AuraEngine _auraEngine = AuraEngine();
-  
-  static SnapshotState? _lastSnapshot;
+  AuraCalculatorService._();
+  static final AuraCalculatorService instance = AuraCalculatorService._();
+  factory AuraCalculatorService() => instance;
 
-  void dispose() {
-    _faceDetector.close();
-    _segmenter.close();
-    _poseDetector.close();
-    _imageLabeler.close();
+  late final FaceDetector _faceDetector = FaceDetector(
+    options: FaceDetectorOptions(
+      enableContours: true,
+      enableLandmarks: true,
+      enableClassification: true,
+      performanceMode: FaceDetectorMode.accurate,
+      minFaceSize: 0.05,
+    ),
+  );
+  late final PoseDetector _poseDetector = PoseDetector(options: PoseDetectorOptions(mode: PoseDetectionMode.single));
+  late final ImageLabeler _imageLabeler = ImageLabeler(options: ImageLabelerOptions(confidenceThreshold: 0.55));
+  late final SubjectSegmenter _segmenter = SubjectSegmenter(
+    options: SubjectSegmenterOptions(
+      enableForegroundBitmap: false,
+      enableForegroundConfidenceMask: true,
+      enableMultipleSubjects: SubjectResultOptions(enableConfidenceMask: false, enableSubjectBitmap: false),
+    ),
+  );
+  final AuraEngine _engine = AuraEngine();
+
+  Future<void>? _warming;
+
+  /// Loads the TFLite models and initialises every ML Kit detector on a tiny
+  /// image, so the first real photo doesn't pay start-up costs. Called when
+  /// Aura mode is opened.
+  Future<void> warmUp() => _warming ??= _warmUp();
+
+  Future<void> _warmUp() async {
+    final models = ModelRunner.instance.load();
+    try {
+      final path = '${(await getTemporaryDirectory()).path}/aura_warmup.jpg';
+      await File(path).writeAsBytes(await compute((_) => img.encodeJpg(img.Image(width: 96, height: 96)), null));
+      final input = InputImage.fromFilePath(path);
+      await Future.wait([
+        _faceDetector.processImage(input),
+        _poseDetector.processImage(input),
+        _imageLabeler.processImage(input),
+        _segmenter.processImage(input),
+      ]);
+    } catch (e) {
+      debugPrint('Aura: warm-up skipped: $e');
+    }
+    await models;
   }
 
-  Future<AuraResult> analyzeImage(String imagePath) async {
-    return calculateAura(imagePath);
-  }
+  /// Models stay loaded for the app's lifetime; kept for older call sites.
+  void dispose() {}
+
+  Future<AuraResult> analyzeImage(String imagePath) => calculateAura(imagePath);
 
   Future<AuraResult> calculateAura(String imagePath) async {
-    double genderProbability = 0.5;
-    bool hasHuman = true;
-    Point<double>? targetPoint;
-    DetailedAuraScore? detailedScore;
-    
-    Set<String> currentObjects = {};
-    double currentFaceRatio = 0.0;
-    double currentBodyRatio = 0.0;
-    
-    double currentSmile = 0.0;
-    double currentYaw = 0.0;
-    double currentTilt = 0.0;
+    final clock = Stopwatch()..start();
+    final timings = <String, int>{};
+    void mark(String stage) => timings[stage] = clock.elapsedMilliseconds;
 
+    AnalysisImage? analysis;
+    Future<FramePixels>? frameFuture;
     try {
-      final analysisImage = await AnalysisImage.create(imagePath);
-      final inputImage = analysisImage.inputImage;
+      warmUp();
+      analysis = await AnalysisImage.create(imagePath);
+      final input = analysis.inputImage;
+      final int w = analysis.width, h = analysis.height;
+      mark('prepare');
 
-      // Run tasks sequentially to prevent OOM and native crashes during batch processing
-      final faces = await _faceDetector.processImage(inputImage);
-      
-      // Only run segmenter if we found a human to save massive amounts of memory/time
-      SubjectSegmentationResult? segmentResult;
-      if (faces.isNotEmpty) {
-          try {
-             segmentResult = await _segmenter.processImage(inputImage);
-          } catch (e) {
-             debugPrint("Segmenter error: $e");
-          }
-      }
-      
-      final poses = await _poseDetector.processImage(inputImage);
-      
-      if (segmentResult == null && poses.isNotEmpty) {
-          try {
-             segmentResult = await _segmenter.processImage(inputImage);
-          } catch (e) {
-             debugPrint("Segmenter error: $e");
-          }
-      }
-      
-      final labels = await _imageLabeler.processImage(inputImage);
-      
-      // We pass the pre-decoded AnalysisImage to advanced inference to avoid redundant decoding
-      final advancedFeatures = await _advancedInference.analyze(analysisImage);
+      // Pixels and the content model don't need the detectors: start them now
+      frameFuture = FramePixels.load(analysis.path);
+      final Future<double?> nsfwFuture = frameFuture.then((f) => ModelRunner.instance.nsfw(f.nsfwInput));
+      nsfwFuture.ignore();
 
-      
-      for (var label in labels) {
-         final l = label.label.toLowerCase();
-         if (['glasses', 'sunglasses', 'hat', 'cap', 'jacket', 'coat', 'shirt', 'dress', 'tie', 'scarf', 'necklace', 'phone', 'mobile phone', 'watch', 'bag'].contains(l)) {
-            currentObjects.add(label.label);
-         }
-      }
+      // Face, pose and labels are independent: run them together. The
+      // silhouette only matters with a real body in view, so segmentation
+      // starts as soon as the (faster) pose result shows one.
+      final poseFuture = _poseDetector.processImage(input);
+      final Future<SilhouetteMetrics?> silhouetteFuture = poseFuture.then((poses) {
+        if (poses.isEmpty || !PoseMetrics.fromPose(poses.first, w, h).isConfidentPerson) return null;
+        return _segmenter.processImage(input).then((r) {
+          final mask = r.foregroundConfidenceMask;
+          return mask == null ? null : SilhouetteMetrics.fromMask(mask, w, h, poses.first);
+        });
+      }).catchError((Object e) {
+        debugPrint('Aura: segmentation failed: $e');
+        return null;
+      });
+      silhouetteFuture.ignore();
+      final detections = await Future.wait([
+        _faceDetector.processImage(input),
+        poseFuture,
+        _imageLabeler.processImage(input),
+      ]);
+      final faces = (detections[0] as List<Face>).where((f) => f.boundingBox.width >= w * 0.04).toList()
+        ..sort((a, b) => (b.boundingBox.width * b.boundingBox.height).compareTo(a.boundingBox.width * a.boundingBox.height));
+      final poses = detections[1] as List<Pose>;
+      final labels = (detections[2] as List<ImageLabel>).map((l) => LabelFinding(l.label, l.confidence)).toList();
+      mark('mlkit');
 
-      if (faces.isNotEmpty) {
-         final face = faces.first;
-         currentFaceRatio = face.boundingBox.width / max(face.boundingBox.height, 1.0);
-         currentSmile = face.smilingProbability ?? 0.0;
-         currentYaw = face.headEulerAngleY ?? 0.0;
-         currentTilt = face.headEulerAngleZ ?? 0.0;
-      }
-      
-      if (poses.isNotEmpty && faces.isNotEmpty) {
-         final p = poses.first;
-         final ls = p.landmarks[PoseLandmarkType.leftShoulder];
-         final rs = p.landmarks[PoseLandmarkType.rightShoulder];
-         if (ls != null && rs != null) {
-            double shoulderWidth = (ls.x - rs.x).abs();
-            currentBodyRatio = shoulderWidth / max(faces.first.boundingBox.width, 1.0);
-         }
-      }
+      final Face? face = faces.isNotEmpty ? faces.first : null;
+      final FaceMetrics? faceMetrics = face == null ? null : FaceMetrics.fromFace(face, w, h);
+      final Pose? pose = poses.isNotEmpty ? poses.first : null;
+      final PoseMetrics? poseMetrics = pose == null ? null : PoseMetrics.fromPose(pose, w, h);
+      final bool isArt = faceMetrics == null && !(poseMetrics?.isConfidentPerson ?? false) && _looksLikeIllustratedPerson(labels);
 
-      if (faces.isNotEmpty) {
-        genderProbability = GenderPredictor.calculateGenderProbability(faces.first, poses.isNotEmpty ? poses.first : null);
-      }
-
-      bool is2DArt = false;
-      if (faces.isEmpty && poses.isEmpty) {
-        final humanLabels = ['person', 'human', 'woman', 'man', 'girl', 'boy', 'face', 'hair', 'leg', 'arm', 'chest', 'torso', 'skin', 'eye', 'lip', 'mouth', 'smile', 'anime', 'female', 'male', 'curve', 'hand', 'body'];
-        bool foundHumanLabel = false;
-        for (var label in labels) {
-            final l = label.label.toLowerCase();
-            if (humanLabels.any((hl) => l.contains(hl))) {
-                foundHumanLabel = true;
-                break;
-            }
+      final bool hasHuman = faceMetrics != null || (poseMetrics?.isConfidentPerson ?? false) || isArt;
+      if (!hasHuman) {
+        if (kDebugMode) {
+          debugPrint('AURA_TIMING no-human prepare=${timings['prepare']} mlkit=${timings['mlkit']} total=${clock.elapsedMilliseconds}ms '
+              'faces=${(detections[0] as List).length} poseConfidence=${poseMetrics?.coreConfidence.toStringAsFixed(2)} '
+              'lowLight=${analysis.detectorPath != analysis.path}');
         }
-        if (!foundHumanLabel) {
-            hasHuman = false;
-        } else {
-            hasHuman = true;
-            is2DArt = true;
-        }
-      } else {
-        hasHuman = true;
-      }
-
-      if (hasHuman) {
-          // Snapshot Caching Logic
-          if (AuraCalculatorService._lastSnapshot != null) {
-             final timeDiff = DateTime.now().difference(AuraCalculatorService._lastSnapshot!.timestamp).inSeconds;
-             if (timeDiff < 180) { // 3 minutes window
-                 
-                 // 1. PIN GENDER ARCHETYPE: Reuse stable gender probability to avoid flipping scorers due to jitter
-                 genderProbability = AuraCalculatorService._lastSnapshot!.genderProbability;
-                 
-                 // 2. CACHE BUSTING LOGIC: Only bust if intentional expression/pose changes
-                 bool objectsChanged = currentObjects.difference(AuraCalculatorService._lastSnapshot!.objectLabels).isNotEmpty || 
-                                       AuraCalculatorService._lastSnapshot!.objectLabels.difference(currentObjects).isNotEmpty;
-                 
-                 bool bodyRatioChanged = false;
-                 if (AuraCalculatorService._lastSnapshot!.bodyRatio > 0 && currentBodyRatio > 0) {
-                     double diff = (currentBodyRatio - AuraCalculatorService._lastSnapshot!.bodyRatio).abs() / AuraCalculatorService._lastSnapshot!.bodyRatio;
-                     if (diff > 0.15) bodyRatioChanged = true; 
-                 } else if (AuraCalculatorService._lastSnapshot!.bodyRatio > 0 || currentBodyRatio > 0) {
-                     bodyRatioChanged = true; 
-                 }
-                 
-                 bool faceRatioChanged = false;
-                 if (AuraCalculatorService._lastSnapshot!.faceRatio > 0 && currentFaceRatio > 0) {
-                     double diff = (currentFaceRatio - AuraCalculatorService._lastSnapshot!.faceRatio).abs() / AuraCalculatorService._lastSnapshot!.faceRatio;
-                     if (diff > 0.15) faceRatioChanged = true; 
-                 }
-                 
-                 bool expressionChanged = false;
-                 if ((currentSmile - AuraCalculatorService._lastSnapshot!.smileProb).abs() > 0.15) {
-                     expressionChanged = true;
-                 }
-                 if ((currentYaw - AuraCalculatorService._lastSnapshot!.yaw).abs() > 10.0) {
-                     expressionChanged = true;
-                 }
-                 if ((currentTilt - AuraCalculatorService._lastSnapshot!.tilt).abs() > 10.0) {
-                     expressionChanged = true;
-                 }
-                 
-                 // If nothing significant changed, lock the score to prevent jitter!
-                 if (!objectsChanged && !bodyRatioChanged && !faceRatioChanged && !expressionChanged) {
-                     return AuraResult(
-                       score: AuraCalculatorService._lastSnapshot!.details.overallPoints,
-                       hasHuman: true,
-                       targetPoint: AuraCalculatorService._lastSnapshot!.targetPoint,
-                       hypeMessage: AuraCalculatorService._lastSnapshot!.hypeMessage,
-                       details: AuraCalculatorService._lastSnapshot!.details,
-                     );
-                 }
-             }
+        // Say why when the photo itself is the likely problem
+        String? hint;
+        try {
+          final frame = await frameFuture.timeout(const Duration(milliseconds: 800));
+          if (frame.meanLuma < 50) {
+            hint = 'Too dark to see you clearly. Try again with more light.';
+          } else if (frame.centerSharpness < 25) {
+            hint = 'Too blurry to see you clearly. Hold the phone steady.';
           }
-        bool isLikelyFemale = genderProbability >= 0.5;
-        
-        TrueProportions? proportions;
-        if (poses.isNotEmpty) {
-           if (segmentResult != null && segmentResult.foregroundConfidenceMask != null) {
-              final mask = segmentResult.foregroundConfidenceMask!;
-              int w = analysisImage.width;
-              int h = analysisImage.height;
-              
-              if (w > 0 && h > 0) {
-                 // Convert List<double> to Float32List
-                 final floatMask = Float32List.fromList(mask);
-                 try {
-                   if (isLikelyFemale) {
-                     proportions = SilhouetteMath.calculateTrueFemaleShape(poses.first, floatMask, w, h);
-                   } else {
-                     proportions = SilhouetteMath.calculateTrueMaleShape(poses.first, floatMask, w, h);
-                   }
-                 } catch (e, stack) {
-                   debugPrint('Error in SilhouetteMath: $e\n$stack');
-                 }
-              }
-           }
-        }
-        
-        detailedScore = _auraEngine.calculateScore(
-          face: faces.isNotEmpty ? faces.first : null, 
-          pose: poses.isNotEmpty ? poses.first : null, 
-          advanced: advancedFeatures,
-          proportions: proportions,
-          isLikelyFemale: isLikelyFemale,
-          labels: labels.map((l) => l.label).toList(),
+        } catch (_) {}
+        return AuraResult(
+          score: 0,
+          hasHuman: false,
+          imageWidth: analysis.sourceWidth,
+          imageHeight: analysis.sourceHeight,
+          hint: hint,
         );
-        
-        // Calculate target point for UI
-        if (poses.isNotEmpty) {
-          final pose = poses.first;
-          final leftShoulder = pose.landmarks[PoseLandmarkType.leftShoulder];
-          final rightShoulder = pose.landmarks[PoseLandmarkType.rightShoulder];
-          final leftHip = pose.landmarks[PoseLandmarkType.leftHip];
-          final rightHip = pose.landmarks[PoseLandmarkType.rightHip];
-          
-          if (leftShoulder != null && rightShoulder != null && leftHip != null && rightHip != null) {
-            if (isLikelyFemale) {
-               targetPoint = Point<double>(
-                 (leftHip.x + rightHip.x) / 2, 
-                 (leftHip.y + rightHip.y) / 2
-               );
-            } else {
-               double midX = (leftShoulder.x + rightShoulder.x) / 2;
-               double midY = (leftShoulder.y + rightShoulder.y) / 2;
-               double shoulderWidthRef = max((leftShoulder.x - rightShoulder.x).abs(), 1.0);
-               targetPoint = Point<double>(midX, midY + (0.3 * shoulderWidthRef));
-            }
-          }
-        }
-        
-        if (targetPoint == null && faces.isNotEmpty) {
-           final face = faces.first;
-           targetPoint = Point<double>(
-              face.boundingBox.center.dx,
-              face.boundingBox.top - (0.3 * max(face.boundingBox.height, 1.0))
-           );
-        }
       }
 
-    } catch (e, stack) {
-      debugPrint('Error in Aura Calculation: $e\\n$stack');
-    }
+      final frame = await frameFuture;
+      final FacePixels? facePixels = faceMetrics == null ? null : await frame.face(faceMetrics.box);
+      final pixels = PixelMetrics.of(frame, facePixels);
+      mark('pixels');
+      final modelResults = await Future.wait<Object?>([
+        facePixels != null ? ModelRunner.instance.emotion(facePixels.emotionInput) : Future.value(null),
+        nsfwFuture,
+      ]);
+      mark('models');
+      final silhouette = await silhouetteFuture;
+      mark('segmentation');
 
-    String? finalHype;
-    if (hasHuman && detailedScore != null) {
-      if (detailedScore.allSlangs.isNotEmpty) {
-        finalHype = detailedScore.allSlangs[Random().nextInt(detailedScore.allSlangs.length)];
-      } else {
-        finalHype = "Looking good! ✨";
+      final double genderProbability = face != null ? GenderPredictor.calculateGenderProbability(face, pose) : 0.5;
+      final details = _engine.calculateScore(AuraFeatures(
+        face: faceMetrics,
+        // Other people only count if they're a real part of the shot
+        faceCount: faces
+            .where((f) => f.boundingBox.width * f.boundingBox.height >= 0.3 * face!.boundingBox.width * face.boundingBox.height)
+            .length,
+        pose: poseMetrics,
+        silhouette: silhouette,
+        pixels: pixels,
+        labels: labels,
+        emotions: modelResults[0] as List<double>?,
+        nsfw: modelResults[1] as double?,
+        isArt: isArt,
+        isLikelyFemale: genderProbability >= 0.5,
+      ));
+
+      final double toSource = analysis.toSourceScale;
+      Point<double>? target;
+      if (pose != null && (poseMetrics?.hasTorso ?? false)) {
+        final ls = pose.landmarks[PoseLandmarkType.leftShoulder]!, rs = pose.landmarks[PoseLandmarkType.rightShoulder]!;
+        target = Point((ls.x + rs.x) / 2 * toSource, (ls.y + rs.y) / 2 * toSource);
+      } else if (face != null) {
+        target = Point(face.boundingBox.center.dx * toSource, (face.boundingBox.top - 0.3 * face.boundingBox.height) * toSource);
       }
-    } else if (hasHuman) {
-      finalHype = "Oof, tough crowd 😬";
-    }
 
-    // Use the fallback score only if completely failed to produce details
-    int fallbackScore = detailedScore?.isBodyOnly == true ? 500 : -9999;
-    
-    final result = AuraResult(
-      score: detailedScore?.overallPoints ?? fallbackScore,
-      hasHuman: hasHuman,
-      targetPoint: targetPoint,
-      hypeMessage: finalHype,
-      details: detailedScore,
-    );
-    
-    if (hasHuman && detailedScore != null) {
-      AuraCalculatorService._lastSnapshot = SnapshotState(
-        details: detailedScore,
-        hypeMessage: result.hypeMessage,
-        targetPoint: result.targetPoint,
-        timestamp: DateTime.now(),
-        objectLabels: currentObjects,
-        faceRatio: currentFaceRatio,
-        bodyRatio: currentBodyRatio,
-        genderProbability: genderProbability,
-        smileProb: currentSmile,
-        yaw: currentYaw,
-        tilt: currentTilt,
+      final slangs = details.allSlangs;
+      final String hype = slangs.isEmpty ? 'Looking good! ✨' : slangs[details.overallPoints % slangs.length];
+      if (kDebugMode) {
+        debugPrint('AURA_TIMING prepare=${timings['prepare']} mlkit=${timings['mlkit']} pixels=${timings['pixels']} '
+            'models=${timings['models']} segmentation=${timings['segmentation']} total=${clock.elapsedMilliseconds}ms');
+      }
+
+      return AuraResult(
+        score: details.overallPoints,
+        hasHuman: true,
+        targetPoint: target,
+        hypeMessage: hype,
+        details: details,
+        imageWidth: analysis.sourceWidth,
+        imageHeight: analysis.sourceHeight,
       );
+    } catch (e, stack) {
+      debugPrint('Error in Aura Calculation: $e\n$stack');
+      return AuraResult(
+        score: 0,
+        hasHuman: false,
+        imageWidth: analysis?.sourceWidth ?? 0,
+        imageHeight: analysis?.sourceHeight ?? 0,
+        error: 'Could not analyse this photo',
+      );
+    } finally {
+      // The background pixel job may still be reading the file
+      final a = analysis;
+      if (frameFuture != null) {
+        frameFuture.then((_) {}, onError: (_) {}).whenComplete(() => a?.deleteFile());
+      } else {
+        a?.deleteFile();
+      }
     }
+  }
 
-    return result;
+  /// Illustrations (anime, cartoons) where ML Kit finds no real face or body:
+  /// needs a confident art label plus a confident person-related label.
+  /// Labels are compared as whole words (a "Chair" is not "hair").
+  static bool _looksLikeIllustratedPerson(List<LabelFinding> labels) {
+    const art = {'anime', 'cartoon', 'illustration', 'comics', 'drawing', 'fictional character', 'art'};
+    const person = {'selfie', 'smile', 'beard', 'moustache', 'eyelash', 'lipstick', 'skin', 'muscle', 'hairstyle', 'face'};
+    bool hasArt = false, hasPerson = false;
+    for (final l in labels) {
+      if (l.confidence < 0.6) continue;
+      final name = l.label.toLowerCase();
+      if (art.contains(name)) hasArt = true;
+      if (person.contains(name)) hasPerson = true;
+    }
+    return hasArt && hasPerson;
   }
 }

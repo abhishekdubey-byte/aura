@@ -1,7 +1,16 @@
+import 'dart:async';
+
 import 'package:aura/main.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+
+import '../services/reminder_service.dart';
+import '../widgets/aura_brand.dart';
+import '../widgets/dob_field.dart';
+
+enum _NameState { idle, checking, available, taken, invalid }
 
 class RegistrationScreen extends StatefulWidget {
   const RegistrationScreen({super.key});
@@ -14,196 +23,294 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
   final _formKey = GlobalKey<FormState>();
   final TextEditingController _usernameController = TextEditingController();
   final TextEditingController _fullNameController = TextEditingController();
-  final TextEditingController _ageController = TextEditingController();
+  DateTime? _dob;
+  String? _dobError;
   String _selectedGender = 'Male';
-  bool _is12Plus = false;
+  bool _confirmedAdult = false;
+  bool _submitting = false;
 
+  _NameState _nameState = _NameState.idle;
+  Timer? _nameDebounce;
+  int _nameCheck = 0;
+
+  static final RegExp _validName = RegExp(r'^[a-zA-Z0-9_.]{3,20}$');
   final List<String> _genders = ['Male', 'Female', 'Non-Binary', 'Other'];
 
-  Future<void> _submitRegistration() async {
-    if (_formKey.currentState!.validate()) {
-      if (!_is12Plus) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('You must confirm you are 12+ to use this app.'),
-            backgroundColor: Colors.redAccent,
-          ),
-        );
-        return;
-      }
+  @override
+  void initState() {
+    super.initState();
+    _usernameController.addListener(_onUsernameChanged);
+  }
 
-      final username = _usernameController.text.trim();
-      
-      try {
-        final supabase = Supabase.instance.client;
-        final response = await supabase.from('leaderboard').select().eq('username', username);
-        if (response.isNotEmpty) {
-          if (mounted) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(
-                content: Text('Username already taken. Please choose another one.'),
-                backgroundColor: Colors.redAccent,
-              ),
-            );
-          }
-          return;
-        }
-      } catch (e) {
-        debugPrint('Error checking username uniqueness: $e');
-      }
-
-      final prefs = await SharedPreferences.getInstance();
-      await prefs.setBool('registered_flag', true);
-      await prefs.setString('username', username);
-      await prefs.setString('full_name', _fullNameController.text.trim());
-      await prefs.setString('age', _ageController.text.trim());
-      await prefs.setString('gender', _selectedGender);
-
-      if (mounted) {
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(builder: (context) => const CameraScreen()),
-        );
-      }
+  void _onUsernameChanged() {
+    _nameDebounce?.cancel();
+    final name = _usernameController.text.trim();
+    if (name.isEmpty) {
+      setState(() => _nameState = _NameState.idle);
+      return;
     }
+    if (!_validName.hasMatch(name)) {
+      setState(() => _nameState = _NameState.invalid);
+      return;
+    }
+    setState(() => _nameState = _NameState.checking);
+    _nameDebounce = Timer(const Duration(milliseconds: 500), () async {
+      final int check = ++_nameCheck;
+      final bool? taken = await _isTaken(name);
+      if (!mounted || check != _nameCheck) return;
+      setState(() => _nameState = taken == true ? _NameState.taken : _NameState.available);
+    });
+  }
+
+  /// null when offline / unknown.
+  Future<bool?> _isTaken(String username) async {
+    try {
+      final response = await Supabase.instance.client.from('leaderboard').select('username').eq('username', username).limit(1);
+      return response.isNotEmpty;
+    } catch (e) {
+      debugPrint('Error checking username uniqueness: $e');
+      return null;
+    }
+  }
+
+  Future<void> _submitRegistration() async {
+    final bool formOk = _formKey.currentState!.validate();
+    setState(() {
+      _dobError = _dob == null
+          ? 'Please add your date of birth'
+          : (AgeRules.isAdult(_dob!) ? null : 'AURA is for adults only (18+)');
+    });
+    if (!formOk || _dobError != null) {
+      HapticFeedback.heavyImpact();
+      return;
+    }
+    if (!_confirmedAdult) {
+      HapticFeedback.heavyImpact();
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Please confirm you are 18 or older.'), backgroundColor: Colors.redAccent, behavior: SnackBarBehavior.floating),
+      );
+      return;
+    }
+
+    final username = _usernameController.text.trim();
+    setState(() => _submitting = true);
+    if (await _isTaken(username) == true) {
+      if (!mounted) return;
+      setState(() {
+        _submitting = false;
+        _nameState = _NameState.taken;
+      });
+      _formKey.currentState!.validate();
+      return;
+    }
+
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool('registered_flag', true);
+    await prefs.setBool('adult_confirmed', true);
+    await prefs.setString('username', username);
+    await prefs.setString('full_name', _fullNameController.text.trim());
+    await prefs.setString('dob', _dob!.toIso8601String());
+    await prefs.setString('age', AgeRules.ageOn(_dob!, DateTime.now()).toString());
+    await prefs.setString('gender', _selectedGender);
+
+    // Now that they're in, ask about streak reminders
+    await ReminderService.requestPermission();
+
+    if (!mounted) return;
+    HapticFeedback.mediumImpact();
+    Navigator.pushAndRemoveUntil(context, AuraRoute(const CameraScreen()), (_) => false);
   }
 
   @override
   void dispose() {
+    _nameDebounce?.cancel();
     _usernameController.dispose();
     _fullNameController.dispose();
-    _ageController.dispose();
     super.dispose();
+  }
+
+  InputDecoration _decoration(String label, IconData icon, {Widget? suffix, String? prefix}) => InputDecoration(
+        labelText: label,
+        prefixText: prefix,
+        prefixIcon: Icon(icon, color: Colors.white60),
+        suffixIcon: suffix,
+        labelStyle: const TextStyle(color: Colors.white60),
+        filled: true,
+        fillColor: Colors.white.withValues(alpha: 0.06),
+        enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(14), borderSide: const BorderSide(color: Colors.white24)),
+        focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(14), borderSide: const BorderSide(color: Color(0xFFE040FB), width: 1.6)),
+        errorBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(14), borderSide: const BorderSide(color: Colors.redAccent)),
+        focusedErrorBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(14), borderSide: const BorderSide(color: Colors.redAccent, width: 1.6)),
+      );
+
+  Widget? _nameIndicator() {
+    switch (_nameState) {
+      case _NameState.checking:
+        return const Padding(
+          padding: EdgeInsets.all(14),
+          child: SizedBox.square(dimension: 18, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white54)),
+        );
+      case _NameState.available:
+        return const Icon(Icons.check_circle, color: Colors.greenAccent);
+      case _NameState.taken:
+      case _NameState.invalid:
+        return const Icon(Icons.cancel, color: Colors.redAccent);
+      case _NameState.idle:
+        return null;
+    }
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: SafeArea(
-        child: Center(
-          child: SingleChildScrollView(
-            padding: const EdgeInsets.all(24.0),
-            child: Form(
-              key: _formKey,
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  const Icon(Icons.auto_awesome, size: 80, color: Colors.deepPurpleAccent),
-                  const SizedBox(height: 16),
-                  const Text(
-                    'Welcome to AURA',
-                    textAlign: TextAlign.center,
-                    style: TextStyle(fontSize: 32, fontWeight: FontWeight.bold, color: Colors.white),
-                  ),
-                  const SizedBox(height: 8),
-                  const Text(
-                    'Register to discover your true aura score.',
-                    textAlign: TextAlign.center,
-                    style: TextStyle(fontSize: 16, color: Colors.grey),
-                  ),
-                  const SizedBox(height: 32),
-                  
-                  // Username
-                  TextFormField(
-                    controller: _usernameController,
-                    decoration: InputDecoration(
-                      labelText: 'Username',
-                      prefixIcon: const Icon(Icons.alternate_email),
-                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-                      filled: true,
-                      fillColor: Colors.grey[900],
+      backgroundColor: Colors.black,
+      body: AuraBackdrop(
+        intensity: 0.8,
+        child: SafeArea(
+          child: Center(
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.fromLTRB(20, 16, 20, 24),
+              child: Form(
+                key: _formKey,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    const Reveal(child: Center(child: AuraOrb(size: 92))),
+                    const SizedBox(height: 16),
+                    const Reveal(
+                      delay: Duration(milliseconds: 100),
+                      child: Text('Create your AURA',
+                          textAlign: TextAlign.center,
+                          style: TextStyle(fontSize: 30, fontWeight: FontWeight.w900, color: Colors.white)),
                     ),
-                    validator: (value) => value == null || value.trim().isEmpty ? 'Required' : null,
-                  ),
-                  const SizedBox(height: 16),
-
-                  // Full Name
-                  TextFormField(
-                    controller: _fullNameController,
-                    decoration: InputDecoration(
-                      labelText: 'Full Name',
-                      prefixIcon: const Icon(Icons.person_outline),
-                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-                      filled: true,
-                      fillColor: Colors.grey[900],
+                    const SizedBox(height: 6),
+                    const Reveal(
+                      delay: Duration(milliseconds: 180),
+                      child: Text('One minute, then your aura awaits.',
+                          textAlign: TextAlign.center, style: TextStyle(fontSize: 15, color: Colors.white60)),
                     ),
-                    validator: (value) => value == null || value.trim().isEmpty ? 'Required' : null,
-                  ),
-                  const SizedBox(height: 16),
-
-                  // Age
-                  TextFormField(
-                    controller: _ageController,
-                    keyboardType: TextInputType.number,
-                    decoration: InputDecoration(
-                      labelText: 'Age',
-                      prefixIcon: const Icon(Icons.calendar_today),
-                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-                      filled: true,
-                      fillColor: Colors.grey[900],
+                    const SizedBox(height: 24),
+                    Reveal(
+                      delay: const Duration(milliseconds: 260),
+                      child: GlassCard(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.stretch,
+                          children: [
+                            TextFormField(
+                              controller: _usernameController,
+                              style: const TextStyle(color: Colors.white),
+                              textInputAction: TextInputAction.next,
+                              autocorrect: false,
+                              decoration: _decoration('Username', Icons.alternate_email, suffix: _nameIndicator()),
+                              validator: (value) {
+                                final v = value?.trim() ?? '';
+                                if (v.isEmpty) return 'Pick a username';
+                                if (!_validName.hasMatch(v)) return '3–20 letters, numbers, _ or .';
+                                if (_nameState == _NameState.taken) return 'That username is taken';
+                                return null;
+                              },
+                            ),
+                            const SizedBox(height: 14),
+                            TextFormField(
+                              controller: _fullNameController,
+                              style: const TextStyle(color: Colors.white),
+                              textCapitalization: TextCapitalization.words,
+                              textInputAction: TextInputAction.done,
+                              decoration: _decoration('Full name', Icons.person_outline),
+                              validator: (value) => value == null || value.trim().isEmpty ? 'Tell us your name' : null,
+                            ),
+                            const SizedBox(height: 14),
+                            DobField(
+                              value: _dob,
+                              errorText: _dobError,
+                              onChanged: (dob) => setState(() {
+                                _dob = dob;
+                                _dobError = AgeRules.isAdult(dob) ? null : 'AURA is for adults only (18+)';
+                              }),
+                            ),
+                            const SizedBox(height: 16),
+                            const Text('Gender', style: TextStyle(color: Colors.white60, fontSize: 13)),
+                            const SizedBox(height: 8),
+                            Wrap(
+                              spacing: 8,
+                              runSpacing: 8,
+                              children: [
+                                for (final g in _genders)
+                                  GestureDetector(
+                                    onTap: () {
+                                      HapticFeedback.selectionClick();
+                                      setState(() => _selectedGender = g);
+                                    },
+                                    child: AnimatedContainer(
+                                      duration: const Duration(milliseconds: 200),
+                                      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 9),
+                                      decoration: BoxDecoration(
+                                        borderRadius: BorderRadius.circular(20),
+                                        gradient: g == _selectedGender ? const LinearGradient(colors: kAuraGradient) : null,
+                                        color: g == _selectedGender ? null : Colors.white.withValues(alpha: 0.06),
+                                        border: Border.all(color: g == _selectedGender ? Colors.transparent : Colors.white24),
+                                      ),
+                                      child: Text(g,
+                                          style: TextStyle(
+                                            color: Colors.white,
+                                            fontWeight: g == _selectedGender ? FontWeight.w800 : FontWeight.w500,
+                                          )),
+                                    ),
+                                  ),
+                              ],
+                            ),
+                            const SizedBox(height: 14),
+                            // 18+ confirmation
+                            GestureDetector(
+                              onTap: () {
+                                HapticFeedback.selectionClick();
+                                setState(() => _confirmedAdult = !_confirmedAdult);
+                              },
+                              child: Row(
+                                children: [
+                                  AnimatedContainer(
+                                    duration: const Duration(milliseconds: 180),
+                                    width: 24,
+                                    height: 24,
+                                    decoration: BoxDecoration(
+                                      borderRadius: BorderRadius.circular(7),
+                                      gradient: _confirmedAdult ? const LinearGradient(colors: kAuraGradient) : null,
+                                      border: Border.all(color: _confirmedAdult ? Colors.transparent : Colors.white38, width: 1.6),
+                                    ),
+                                    child: _confirmedAdult ? const Icon(Icons.check, size: 18, color: Colors.white) : null,
+                                  ),
+                                  const SizedBox(width: 12),
+                                  const Expanded(
+                                    child: Text('I confirm I am 18 years of age or older.',
+                                        style: TextStyle(color: Colors.white, fontSize: 14.5)),
+                                  ),
+                                  Container(
+                                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                                    decoration: BoxDecoration(
+                                      borderRadius: BorderRadius.circular(8),
+                                      border: Border.all(color: Colors.redAccent.withValues(alpha: 0.7)),
+                                    ),
+                                    child: const Text('18+', style: TextStyle(color: Colors.redAccent, fontWeight: FontWeight.w900, fontSize: 12)),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
                     ),
-                    validator: (value) {
-                      if (value == null || value.trim().isEmpty) return 'Required';
-                      if (int.tryParse(value.trim()) == null) return 'Must be a valid number';
-                      return null;
-                    },
-                  ),
-                  const SizedBox(height: 16),
-
-                  // Gender
-                  DropdownButtonFormField<String>(
-                    value: _selectedGender,
-                    decoration: InputDecoration(
-                      labelText: 'Gender',
-                      prefixIcon: const Icon(Icons.transgender),
-                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-                      filled: true,
-                      fillColor: Colors.grey[900],
+                    const SizedBox(height: 22),
+                    Reveal(
+                      delay: const Duration(milliseconds: 360),
+                      child: GradientButton(
+                        label: 'Enter AURA',
+                        icon: Icons.auto_awesome,
+                        busy: _submitting,
+                        onPressed: _submitRegistration,
+                      ),
                     ),
-                    items: _genders.map((String gender) {
-                      return DropdownMenuItem<String>(
-                        value: gender,
-                        child: Text(gender),
-                      );
-                    }).toList(),
-                    onChanged: (String? newValue) {
-                      setState(() {
-                        _selectedGender = newValue!;
-                      });
-                    },
-                  ),
-                  const SizedBox(height: 16),
-
-                  // 12+ Verification
-                  CheckboxListTile(
-                    title: const Text('I confirm I am 12 years of age or older.'),
-                    value: _is12Plus,
-                    activeColor: Colors.pinkAccent,
-                    onChanged: (bool? value) {
-                      setState(() {
-                        _is12Plus = value ?? false;
-                      });
-                    },
-                    controlAffinity: ListTileControlAffinity.leading,
-                    contentPadding: EdgeInsets.zero,
-                  ),
-                  const SizedBox(height: 32),
-
-                  // Submit Button
-                  ElevatedButton(
-                    onPressed: _submitRegistration,
-                    style: ElevatedButton.styleFrom(
-                      padding: const EdgeInsets.symmetric(vertical: 16),
-                      backgroundColor: Colors.deepPurpleAccent,
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                    ),
-                    child: const Text(
-                      'Enter AURA',
-                      style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.white),
-                    ),
-                  ),
-                ],
+                  ],
+                ),
               ),
             ),
           ),

@@ -20,15 +20,16 @@ class UploadManager {
 
   bool _isProcessing = false;
 
+  static String _hashFile(String path) => sha256.convert(File(path).readAsBytesSync()).toString();
+
   /// Enqueue an image for upload
   Future<void> enqueue(String imagePath) async {
     final file = File(imagePath);
     if (!file.existsSync()) return;
 
     try {
-      // Create canonical hash for duplicate prevention
-      final bytes = await file.readAsBytes();
-      final hash = sha256.convert(bytes).toString();
+      // Create canonical hash for duplicate prevention (off the UI isolate)
+      final hash = await compute(_hashFile, imagePath);
 
       final prefs = await SharedPreferences.getInstance();
       final queueJson = prefs.getStringList(_queueKey) ?? [];

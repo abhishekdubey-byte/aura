@@ -15,11 +15,12 @@ class ReminderService {
         AndroidInitializationSettings('@mipmap/ic_launcher');
 
     // iOS Initialization
+    // Permission is asked later (after registration), not at app start
     const DarwinInitializationSettings initializationSettingsIOS =
         DarwinInitializationSettings(
-      requestAlertPermission: true,
-      requestBadgePermission: true,
-      requestSoundPermission: true,
+      requestAlertPermission: false,
+      requestBadgePermission: false,
+      requestSoundPermission: false,
     );
 
     const InitializationSettings initializationSettings = InitializationSettings(
@@ -32,12 +33,22 @@ class ReminderService {
       onDidReceiveNotificationResponse: _onNotificationTapped,
     );
 
-    // Request Android 13+ Notification Permission if needed
-    if (!kIsWeb) {
+  }
+
+  /// Asks for notification permission (Android 13+ / iOS). Called once the
+  /// user has registered, so the prompt has context instead of greeting a
+  /// brand-new user on top of onboarding.
+  static Future<void> requestPermission() async {
+    if (kIsWeb) return;
+    try {
       await _notificationsPlugin
-          .resolvePlatformSpecificImplementation<
-              AndroidFlutterLocalNotificationsPlugin>()
+          .resolvePlatformSpecificImplementation<AndroidFlutterLocalNotificationsPlugin>()
           ?.requestNotificationsPermission();
+      await _notificationsPlugin
+          .resolvePlatformSpecificImplementation<IOSFlutterLocalNotificationsPlugin>()
+          ?.requestPermissions(alert: true, badge: true, sound: true);
+    } catch (e) {
+      debugPrint('Notification permission request failed: $e');
     }
   }
 
@@ -64,7 +75,9 @@ class ReminderService {
       body: 'Your Energy is waiting! Let\'s check your AURA today.',
       repeatInterval: RepeatInterval.daily,
       notificationDetails: platformChannelSpecifics,
-      androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
+      // A daily nudge doesn't need to be exact; exact alarms need a special
+      // permission and failed with "exact_alarms_not_permitted"
+      androidScheduleMode: AndroidScheduleMode.inexactAllowWhileIdle,
     );
     debugPrint("Periodic reminder scheduled.");
   }
