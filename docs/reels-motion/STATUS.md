@@ -8,18 +8,18 @@ of a new session or after context restoration.
 
 | Field | Value |
 | --- | --- |
-| Feature | **F00 — Repository audit, existing tests, baseline, workflow documents** |
-| Branch | `chore/reels-00-audit-baseline` |
-| Base branch | `claude/tender-cannon-klfav3` |
-| Base commit | `03323f59835485f3841288e4fd04532a9c6a05bd` |
-| Gate state | **READY_FOR_DEVICE_TEST** |
-| Handoff | [features/F00.md](features/F00.md) |
-| Git state | Changes unstaged and uncommitted; no `add`/`commit`/`push` performed |
-| Application code changed | None — documentation only |
+| Feature | **F01 — Minimal editable project, stable IDs, asset ownership, undo/redo** |
+| Branch | `feature/reels-01-project-history` |
+| Base branch | `chore/reels-00-audit-baseline` |
+| Base commit | `d4554b21a77ae932252accb40ff270b196abeb88` |
+| Gate state | **READY_FOR_DEVICE_TEST** — automated checks pass, device verification NOT RUN |
+| Handoff | [features/F01.md](features/F01.md) |
+| Checks | `flutter analyze` clean; `flutter test` 767/767 pass |
+| Device / APK | **NOT RUN** — no Android SDK or reachable device in the build container |
 
-`READY_FOR_DEVICE_TEST` means remain stopped. F01 does not start until the owner
-supplies device acceptance, manual-commit confirmation, the accepted commit, and
-explicit authorization naming F01.
+Under the revised operating mode, work continues to the next feature rather than
+halting here. What cannot continue is device verification and merging to `main`:
+see the standing blockers below.
 
 ## Feature ledger
 
@@ -29,8 +29,8 @@ Gate states: `NOT_STARTED`, `IN_PROGRESS`, `READY_FOR_DEVICE_TEST`,
 
 | ID | Branch | Gate state | Accepted commit |
 | --- | --- | --- | --- |
-| F00 | `chore/reels-00-audit-baseline` | READY_FOR_DEVICE_TEST | — |
-| F01 | `feature/reels-01-project-history` | NOT_STARTED | — |
+| F00 | `chore/reels-00-audit-baseline` | Pushed, awaiting review/merge | — |
+| F01 | `feature/reels-01-project-history` | READY_FOR_DEVICE_TEST | — |
 | F02 | `feature/reels-02-native-render-baseline` | NOT_STARTED | — |
 | F03 | `feature/reels-03-clip-timeline` | NOT_STARTED | — |
 | F04 | `feature/reels-04-clip-trim` | NOT_STARTED | — |
@@ -81,9 +81,10 @@ recorded, not resolved.
    `CompositionPlayer`, and no native preview surface. F02 is therefore a new
    native module and a dependency decision, not an extension of existing code.
    See [AUDIT.md](AUDIT.md).
-3. **The project canvas is derived at render time**, from
-   `clips.first.ratio`. It must become stored project state in F01, or F06/F07
-   will silently change a reel's canvas. See [AUDIT.md](AUDIT.md).
+3. ~~**The project canvas is derived at render time**, from
+   `clips.first.ratio`.~~ **Fixed in F01**: the canvas is now project state,
+   initialized by the first accepted clip and unchanged by removal, reorder, or
+   an emptied sequence. F13 owns deliberate changes to it.
 4. **No usable VFR timestamp model.** The MP4 probe reads only `mdhd`
    timescale/duration, and export forces `fps=30`. F04, F20, and F21 need real
    per-frame timestamps before their correctness claims can hold.
