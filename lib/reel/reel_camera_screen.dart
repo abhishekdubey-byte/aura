@@ -241,6 +241,11 @@ class _ReelCameraScreenState extends State<ReelCameraScreen>
     });
     try {
       await _close();
+      // The canvas is project state set by the first accepted clip, not a
+      // property of whichever clip is currently first, so removing or replacing
+      // that clip cannot reshape the output.
+      final canvas = _session.project.project.canvas;
+      if (canvas == null) throw StateError('Reel has no canvas');
       final output = await VideoProcessor.reel([
         for (final clip in _session.clips)
           (
@@ -249,7 +254,7 @@ class _ReelCameraScreenState extends State<ReelCameraScreen>
             ratio: clip.ratio,
             seconds: clip.seconds,
           ),
-      ], ratio: _session.clips.first.ratio);
+      ], ratio: canvas.ratio);
       if (output == null) throw StateError('Reel export failed');
       if (!mounted) return;
       await Navigator.push(
