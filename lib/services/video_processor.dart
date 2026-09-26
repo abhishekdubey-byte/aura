@@ -6,6 +6,8 @@ import 'package:ffmpeg_kit_flutter_new_min_gpl/return_code.dart';
 import 'package:flutter/foundation.dart';
 import 'package:path_provider/path_provider.dart';
 
+import 'media_encoder_policy.dart';
+
 /// Mirrors and stitches recorded clips without lowering their quality: output
 /// keeps the source resolution and bitrate. Encodes with the phone's hardware
 /// H.264 encoder (the same one the camera records with, and fast), falling back
@@ -27,7 +29,8 @@ class VideoProcessor {
     final info = await _probe(input);
     final output = await _outputPath('mirrored');
     final ok = await _encode(
-      (encoder) => "-y -i '$input' -vf \"hflip${cropFilter(aspect)}\" $encoder -c:a copy '$output'",
+      (encoder) =>
+          "-y -i '$input' -vf \"hflip${cropFilter(aspect)}\" $encoder -c:a copy '$output'",
       info.bitrate,
     );
     return ok ? output : null;
@@ -39,7 +42,8 @@ class VideoProcessor {
     final info = await _probe(input);
     final output = await _outputPath('cropped');
     final ok = await _encode(
-      (encoder) => "-y -i '$input' -vf \"${cropFilter(aspect).substring(1)}\" $encoder -c:a copy '$output'",
+      (encoder) =>
+          "-y -i '$input' -vf \"${cropFilter(aspect).substring(1)}\" $encoder -c:a copy '$output'",
       info.bitrate,
     );
     return ok ? output : null;
@@ -47,18 +51,32 @@ class VideoProcessor {
 
   /// Joins clips recorded across a camera flip, mirroring front-camera parts.
   /// Returns the output path, or null on failure.
-  static Future<String?> stitch(List<({String path, bool mirror})> segments, {double? aspect}) async {
+  static Future<String?> stitch(
+    List<({String path, bool mirror})> segments, {
+    double? aspect,
+  }) async {
+    if (segments.isEmpty) return null;
     final infos = await Future.wait(segments.map((s) => _probe(s.path)));
+    if (infos.any((info) => info.seconds <= 0)) return null;
+    final includeAudio = infos.any((info) => info.hasAudio);
 
     // Output at the largest recorded resolution and bitrate, in the orientation
     // of the first clip, so no part is downscaled.
-    final largest = infos.reduce((a, b) => a.width * a.height >= b.width * b.height ? a : b);
-    final longSide = largest.width > largest.height ? largest.width : largest.height;
-    final shortSide = largest.width > largest.height ? largest.height : largest.width;
+    final largest = infos.reduce(
+      (a, b) => a.width * a.height >= b.width * b.height ? a : b,
+    );
+    final longSide = largest.width > largest.height
+        ? largest.width
+        : largest.height;
+    final shortSide = largest.width > largest.height
+        ? largest.height
+        : largest.width;
     final portrait = infos.first.height >= infos.first.width;
     final int w = portrait ? shortSide : longSide;
     final int h = portrait ? longSide : shortSide;
-    final int bitrate = infos.map((i) => i.bitrate).reduce((a, b) => a > b ? a : b);
+    final int bitrate = infos
+        .map((i) => i.bitrate)
+        .reduce((a, b) => a > b ? a : b);
 
     String inputs = '';
     String filterComplex = '';
@@ -68,20 +86,120 @@ class VideoProcessor {
       final flip = segments[i].mirror ? 'hflip,' : '';
       filterComplex +=
           '[$i:v]${flip}scale=$w:$h:force_original_aspect_ratio=decrease:flags=lanczos,'
-          'pad=$w:$h:(ow-iw)/2:(oh-ih)/2,setsar=1[v$i];'
-          '[$i:a]aresample=48000[a$i];';
-      concatInputs += '[v$i][a$i]';
+          'pad=$w:$h:(ow-iw)/2:(oh-ih)/2,setsar=1,setpts=PTS-STARTPTS[v$i];';
+      if (includeAudio) {
+        final duration = infos[i].seconds.toStringAsFixed(6);
+        filterComplex += infos[i].hasAudio
+            ? '[$i:a]aresample=48000,apad,atrim=duration=$duration,asetpts=PTS-STARTPTS[a$i];'
+            : 'anullsrc=r=48000:cl=stereo,atrim=duration=$duration,asetpts=PTS-STARTPTS[a$i];';
+      }
+      concatInputs += '[v$i]${includeAudio ? '[a$i]' : ''}';
     }
-    filterComplex += '${concatInputs}concat=n=${segments.length}:v=1:a=1[cv][outa];[cv]null${cropFilter(aspect)}[outv]';
+    filterComplex +=
+        '${concatInputs}concat=n=${segments.length}:v=1:a=${includeAudio ? 1 : 0}[cv]${includeAudio ? '[outa]' : ''};[cv]null${cropFilter(aspect)}[outv]';
 
     final output = await _outputPath('stitched');
     final ok = await _encode(
-      (encoder) => '-y $inputs -filter_complex "$filterComplex" -map "[outv]" -map "[outa]" '
-          "$encoder -c:a aac -b:a 192k '$output'",
+      (encoder) =>
+          '-y $inputs -filter_complex "$filterComplex" -map "[outv]" '
+          '${includeAudio ? '-map "[outa]" -c:a aac -b:a 192k' : '-an'} '
+          "$encoder '$output'",
       bitrate,
     );
     return ok ? output : null;
   }
+
+  /// Reels preserve each clip's crop inside one output canvas. Padding, rather
+  /// than another crop, keeps mixed square/portrait/landscape compositions.
+  static Future<String?> reel(
+    List<({String path, bool mirror, double ratio, double seconds})> clips, {
+    required double ratio,
+  }) async {
+    if (clips.isEmpty || !ratio.isFinite || ratio <= 0) return null;
+    final infos = await Future.wait(clips.map((clip) => _probe(clip.path)));
+    if (infos.any((info) => info.seconds <= 0)) return null;
+    if (clips.any(
+      (c) =>
+          !c.seconds.isFinite ||
+          c.seconds <= 0 ||
+          !c.ratio.isFinite ||
+          c.ratio <= 0,
+    )) {
+      return null;
+    }
+    final hasAudio = infos.any((info) => info.hasAudio);
+    final largest = infos.reduce(
+      (a, b) => a.width * a.height >= b.width * b.height ? a : b,
+    );
+    final longSide =
+        (largest.width > largest.height ? largest.width : largest.height).clamp(
+          2,
+          1920,
+        );
+    int even(double value) => ((value / 2).floor() * 2).clamp(2, 1920);
+    final w = even(ratio >= 1 ? longSide.toDouble() : longSide * ratio);
+    final h = even(ratio >= 1 ? longSide / ratio : longSide.toDouble());
+    final graph = reelFilter(
+      clips: clips,
+      durations: [
+        for (int i = 0; i < clips.length; i++)
+          clips[i].seconds < infos[i].seconds
+              ? clips[i].seconds
+              : infos[i].seconds,
+      ],
+      audio: infos.map((info) => info.hasAudio).toList(),
+      width: w,
+      height: h,
+    );
+    final inputs = clips.map((c) => "-i '${c.path}'").join(' ');
+    final output = await _outputPath('reel');
+    final ok = await _encode(
+      (encoder) =>
+          '-y $inputs -filter_complex "$graph" -map "[outv]" '
+          '${hasAudio ? '-map "[outa]" -c:a aac -b:a 192k' : '-an'} '
+          "$encoder -movflags +faststart '$output'",
+      largest.bitrate,
+    );
+    return ok ? output : null;
+  }
+
+  @visibleForTesting
+  static String reelFilter({
+    required List<({String path, bool mirror, double ratio, double seconds})>
+    clips,
+    required List<double> durations,
+    required List<bool> audio,
+    required int width,
+    required int height,
+  }) {
+    final hasAudio = audio.any((value) => value);
+    final filters = StringBuffer();
+    final inputs = StringBuffer();
+    for (int i = 0; i < clips.length; i++) {
+      final duration = durations[i].toStringAsFixed(6);
+      filters.write(
+        '[$i:v]trim=duration=$duration,setpts=PTS-STARTPTS'
+        '${clips[i].mirror ? ',hflip' : ''}${cropFilter(clips[i].ratio)},'
+        'scale=$width:$height:force_original_aspect_ratio=decrease:flags=lanczos,'
+        'pad=$width:$height:(ow-iw)/2:(oh-ih)/2,setsar=1,fps=30,format=yuv420p[v$i];',
+      );
+      if (hasAudio) {
+        filters.write(
+          audio[i]
+              ? '[$i:a]aresample=48000,aformat=channel_layouts=stereo,apad,atrim=duration=$duration,asetpts=PTS-STARTPTS[a$i];'
+              : 'anullsrc=r=48000:cl=stereo,atrim=duration=$duration,asetpts=PTS-STARTPTS[a$i];',
+        );
+      }
+      inputs.write('[v$i]${hasAudio ? '[a$i]' : ''}');
+    }
+    filters.write(
+      '${inputs}concat=n=${clips.length}:v=1:a=${hasAudio ? 1 : 0}[outv]${hasAudio ? '[outa]' : ''}',
+    );
+    return filters.toString();
+  }
+
+  static Future<double> duration(String path) async =>
+      (await _probe(path)).seconds;
 
   /// Extracts the first [seconds] of a clip as small upright JPEG frames at
   /// [fps] for the live boomerang preview. Returns the frame paths in order.
@@ -93,17 +211,28 @@ class VideoProcessor {
     int width = 432,
     int fps = 30,
   }) async {
-    final dir = Directory('${(await getTemporaryDirectory()).path}/boomerang_${DateTime.now().millisecondsSinceEpoch}');
+    final dir = Directory(
+      '${(await getTemporaryDirectory()).path}/boomerang_${DateTime.now().millisecondsSinceEpoch}',
+    );
     await dir.create(recursive: true);
     final flip = mirror ? ',hflip' : '';
     final session = await FFmpegKit.execute(
       "-y -t ${seconds.toStringAsFixed(3)} -i '$input' -vf \"fps=$fps$flip${cropFilter(aspect)},scale=$width:-2\" -q:v 3 '${dir.path}/f_%04d.jpg'",
     );
     if (!ReturnCode.isSuccess(await session.getReturnCode())) {
-      debugPrint('VideoProcessor: frame extraction failed: ${await session.getLogsAsString()}');
+      debugPrint(
+        'VideoProcessor: frame extraction failed: ${await session.getLogsAsString()}',
+      );
       return null;
     }
-    final files = dir.listSync().whereType<File>().map((f) => f.path).where((p) => p.endsWith('.jpg')).toList()..sort();
+    final files =
+        dir
+            .listSync()
+            .whereType<File>()
+            .map((f) => f.path)
+            .where((p) => p.endsWith('.jpg'))
+            .toList()
+          ..sort();
     return files;
   }
 
@@ -125,7 +254,8 @@ class VideoProcessor {
 
     final cycle = await _outputPath('boomerang_cycle');
     final ok = await _encode(
-      (encoder) => "-y -t ${seconds.toStringAsFixed(3)} -i '$input' -filter_complex \"$filter\" "
+      (encoder) =>
+          "-y -t ${seconds.toStringAsFixed(3)} -i '$input' -filter_complex \"$filter\" "
           "-map \"[out]\" -an $encoder '$cycle'",
       info.bitrate < 16000000 ? 16000000 : info.bitrate,
     );
@@ -147,12 +277,18 @@ class VideoProcessor {
   /// Filter graph for one boomerang cycle: forward pass, then the reversed
   /// pass without the turn-around frames, each with the effect's speed ramp.
   @visibleForTesting
-  static String boomerangFilter(BoomerangTiming timing, {required bool mirror, double? aspect}) {
+  static String boomerangFilter(
+    BoomerangTiming timing, {
+    required bool mirror,
+    double? aspect,
+  }) {
     final int n = timing.frameCount;
     final flip = mirror ? ',hflip' : '';
     // Echo: weighted blend of the current frame and every other one of the
     // previous six (oldest first), matching the live preview's trail
-    final echo = timing.effect.echo ? ",tmix=frames=7:weights='1 0 2 0 3 0 8'" : '';
+    final echo = timing.effect.echo
+        ? ",tmix=frames=7:weights='1 0 2 0 3 0 8'"
+        : '';
     return '[0:v]fps=30,trim=end_frame=$n,setpts=PTS-STARTPTS$flip${cropFilter(aspect)},split[a][b];'
         '[a]setpts=${timing.setptsExpression(forward: true)}[f];'
         '[b]reverse,trim=start_frame=1:end_frame=${n - 1},setpts=PTS-STARTPTS,'
@@ -162,15 +298,21 @@ class VideoProcessor {
 
   /// Tries the hardware encoder at the source bitrate, then x264 at CRF 18
   /// (visually lossless).
-  static Future<bool> _encode(String Function(String encoder) command, int bitrate) async {
+  static Future<bool> _encode(
+    String Function(String encoder) command,
+    int bitrate,
+  ) async {
     final encoders = [
-      '-c:v h264_mediacodec -b:v $bitrate',
+      if (await MediaEncoderPolicy.useHardware)
+        '-c:v h264_mediacodec -b:v $bitrate',
       '-c:v libx264 -preset veryfast -crf 18 -pix_fmt yuv420p',
     ];
     for (final encoder in encoders) {
       final session = await FFmpegKit.execute(command(encoder));
       if (ReturnCode.isSuccess(await session.getReturnCode())) return true;
-      debugPrint('VideoProcessor: encode with "$encoder" failed: ${await session.getLogsAsString()}');
+      debugPrint(
+        'VideoProcessor: encode with "$encoder" failed: ${await session.getLogsAsString()}',
+      );
     }
     return false;
   }
@@ -216,10 +358,18 @@ class VideoProcessor {
 }
 
 class _VideoInfo {
-  _VideoInfo(this.width, this.height, this.bitrate, this.seconds);
+  _VideoInfo(
+    this.width,
+    this.height,
+    this.bitrate,
+    this.seconds, {
+    this.hasAudio = false,
+  });
+  final bool hasAudio;
   final int width;
   final int height;
   final int bitrate;
+
   /// Length of the video track.
   final double seconds;
 }
@@ -236,7 +386,9 @@ class _Mp4Header {
         await file.setPosition(offset);
         final header = ByteData.sublistView(await file.read(16));
         int size = header.getUint32(0);
-        final String type = String.fromCharCodes(header.buffer.asUint8List(header.offsetInBytes + 4, 4));
+        final String type = String.fromCharCodes(
+          header.buffer.asUint8List(header.offsetInBytes + 4, 4),
+        );
         int headerSize = 8;
         if (size == 1) {
           size = header.getUint64(8);
@@ -259,7 +411,24 @@ class _Mp4Header {
   }
 
   static _VideoInfo? _parseMoov(ByteData moov, int fileLength) {
-    for (final trak in _children(moov, 0, moov.lengthInBytes).where((b) => b.type == 'trak')) {
+    final hasAudio = _children(moov, 0, moov.lengthInBytes)
+        .where((b) => b.type == 'trak')
+        .expand((track) => _children(moov, track.start, track.end))
+        .where((b) => b.type == 'mdia')
+        .expand((media) => _children(moov, media.start, media.end))
+        .where((b) => b.type == 'hdlr' && b.end - b.start >= 12)
+        .any(
+          (b) =>
+              String.fromCharCodes(
+                moov.buffer.asUint8List(moov.offsetInBytes + b.start + 8, 4),
+              ) ==
+              'soun',
+        );
+    for (final trak in _children(
+      moov,
+      0,
+      moov.lengthInBytes,
+    ).where((b) => b.type == 'trak')) {
       _Box? tkhd, mdia;
       for (final b in _children(moov, trak.start, trak.end)) {
         if (b.type == 'tkhd') tkhd = b;
@@ -271,11 +440,17 @@ class _Mp4Header {
       double seconds = 0;
       for (final b in _children(moov, mdia.start, mdia.end)) {
         if (b.type == 'hdlr') {
-          isVideo = String.fromCharCodes(moov.buffer.asUint8List(moov.offsetInBytes + b.start + 8, 4)) == 'vide';
+          isVideo =
+              String.fromCharCodes(
+                moov.buffer.asUint8List(moov.offsetInBytes + b.start + 8, 4),
+              ) ==
+              'vide';
         } else if (b.type == 'mdhd') {
           final bool v1 = moov.getUint8(b.start) == 1;
           final int timescale = moov.getUint32(b.start + (v1 ? 20 : 12));
-          final int duration = v1 ? moov.getUint64(b.start + 24) : moov.getUint32(b.start + 16);
+          final int duration = v1
+              ? moov.getUint64(b.start + 24)
+              : moov.getUint32(b.start + 16);
           if (timescale > 0) seconds = duration / timescale;
         }
       }
@@ -297,8 +472,10 @@ class _Mp4Header {
         width = height;
         height = t;
       }
-      final int bitrate = seconds > 0 ? (fileLength * 8 / seconds).round() : 20000000;
-      return _VideoInfo(width, height, bitrate, seconds);
+      final int bitrate = seconds > 0
+          ? (fileLength * 8 / seconds).round()
+          : 20000000;
+      return _VideoInfo(width, height, bitrate, seconds, hasAudio: hasAudio);
     }
     return null;
   }
@@ -315,7 +492,9 @@ class _Mp4Header {
         size = end - offset;
       }
       if (size < headerSize || offset + size > end) return;
-      final String type = String.fromCharCodes(data.buffer.asUint8List(data.offsetInBytes + offset + 4, 4));
+      final String type = String.fromCharCodes(
+        data.buffer.asUint8List(data.offsetInBytes + offset + 4, 4),
+      );
       yield _Box(type, offset + headerSize, offset + size);
       offset += size;
     }

@@ -1,3 +1,8 @@
+import '../services/upload_manager.dart';
+import '../widgets/aura_controls.dart';
+
+import 'package:aura/theme/aura_theme.dart';
+
 import 'dart:io';
 
 import 'package:flutter/material.dart';
@@ -81,8 +86,7 @@ class _LayoutReviewScreenState extends State<LayoutReviewScreen>
     } catch (e) {
       if (mounted) {
         setState(
-          () =>
-              _error = 'Could not prepare the layout. Your cells are safe.\n$e',
+          () => _error = 'Could not prepare the layout. Your cells are safe. Please retry.',
         );
       }
     } finally {
@@ -98,6 +102,7 @@ class _LayoutReviewScreenState extends State<LayoutReviewScreen>
     });
     try {
       await _player?.pause();
+      await UploadManager.instance.enqueue(_output!);
       // Preserve the rendered preview so a gallery permission failure is retryable.
       if (widget.draft.isVideo) {
         await MediaLibrary.saveVideo(
@@ -118,7 +123,7 @@ class _LayoutReviewScreenState extends State<LayoutReviewScreen>
       if (mounted) {
         setState(
           () => _error =
-              'Could not save to the gallery. Check gallery access and retry.\n$e',
+              'Could not save to the gallery. Check photo access and retry.',
         );
       }
     } finally {
@@ -180,11 +185,7 @@ class _LayoutReviewScreenState extends State<LayoutReviewScreen>
             if (_error != null)
               Padding(
                 padding: const EdgeInsets.all(12),
-                child: Text(
-                  _error!,
-                  style: const TextStyle(color: Colors.orangeAccent),
-                  maxLines: 4,
-                ),
+                child: AuraNotice(_error!, error: true),
               ),
             if (widget.draft.isVideo)
               Padding(
@@ -238,7 +239,7 @@ class _LayoutReviewScreenState extends State<LayoutReviewScreen>
                 padding: EdgeInsets.symmetric(horizontal: 16),
                 child: Text(
                   'Clips start together. Shorter clips hold their last frame.',
-                  style: TextStyle(fontSize: 12, color: Colors.white60),
+                  style: TextStyle(fontSize: 12, color: AuraColors.muted),
                 ),
               ),
             Padding(
@@ -253,14 +254,15 @@ class _LayoutReviewScreenState extends State<LayoutReviewScreen>
                     child: const Text('Edit cells'),
                   ),
                   if (_output == null && !_rendering)
-                    FilledButton(onPressed: _render, child: const Text('Retry'))
+                    AuraButton(onPressed: _render, label: 'Try again')
                   else
-                    FilledButton.icon(
+                    AuraButton(
                       onPressed: _output == null || _rendering || _saving
                           ? null
                           : _save,
-                      icon: const Icon(Icons.save_alt),
-                      label: Text(_saving ? 'Saving…' : 'Save layout'),
+                      icon: Icons.download_rounded,
+                      busy: _saving,
+                      label: 'Save layout',
                     ),
                 ],
               ),

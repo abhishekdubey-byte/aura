@@ -1,4 +1,3 @@
-
 import 'package:flutter/foundation.dart';
 import 'package:tflite_flutter/tflite_flutter.dart';
 
@@ -11,7 +10,15 @@ class ModelRunner {
   ModelRunner._();
   static final ModelRunner instance = ModelRunner._();
 
-  static const List<String> emotionLabels = ['angry', 'disgust', 'fear', 'happy', 'sad', 'surprise', 'neutral'];
+  static const List<String> emotionLabels = [
+    'angry',
+    'disgust',
+    'fear',
+    'happy',
+    'sad',
+    'surprise',
+    'neutral',
+  ];
 
   IsolateInterpreter? _emotion, _nsfw;
   Future<void>? _loading;
@@ -28,18 +35,46 @@ class ModelRunner {
   Future<void> load() => _loading ??= _load();
 
   Future<void> _load() async {
-    final options = InterpreterOptions()..threads = 2;
+    InterpreterOptions? options;
     try {
-      final emotion = await Interpreter.fromAsset('assets/models/emotion.tflite', options: options);
-      _emotion = await IsolateInterpreter.create(address: emotion.address);
+      // Loading the native runtime itself can fail on older Android versions.
+      // These auxiliary models are optional; the ML Kit pipeline remains usable.
+      options = InterpreterOptions()..threads = 2;
     } catch (e) {
-      debugPrint('ModelRunner: emotion model unavailable: $e');
+      debugPrint('ModelRunner: native runtime unavailable: $e');
+      return;
     }
     try {
-      final nsfw = await Interpreter.fromAsset('assets/models/nsfw.tflite', options: options);
-      _nsfw = await IsolateInterpreter.create(address: nsfw.address);
-    } catch (e) {
-      debugPrint('ModelRunner: nsfw model unavailable: $e');
+      try {
+        final emotion = await Interpreter.fromAsset(
+          'assets/models/emotion.tflite',
+          options: options,
+        );
+        try {
+          _emotion = await IsolateInterpreter.create(address: emotion.address);
+        } catch (_) {
+          emotion.close();
+          rethrow;
+        }
+      } catch (e) {
+        debugPrint('ModelRunner: emotion model unavailable: $e');
+      }
+      try {
+        final nsfw = await Interpreter.fromAsset(
+          'assets/models/nsfw.tflite',
+          options: options,
+        );
+        try {
+          _nsfw = await IsolateInterpreter.create(address: nsfw.address);
+        } catch (_) {
+          nsfw.close();
+          rethrow;
+        }
+      } catch (e) {
+        debugPrint('ModelRunner: nsfw model unavailable: $e');
+      }
+    } finally {
+      options.delete();
     }
   }
 

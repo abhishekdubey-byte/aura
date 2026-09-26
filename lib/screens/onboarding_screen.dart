@@ -1,3 +1,5 @@
+import 'package:aura/theme/aura_theme.dart';
+
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
@@ -15,21 +17,45 @@ class OnboardingScreen extends StatefulWidget {
   State<OnboardingScreen> createState() => _OnboardingScreenState();
 }
 
-class _OnboardingScreenState extends State<OnboardingScreen> with SingleTickerProviderStateMixin {
+class _OnboardingScreenState extends State<OnboardingScreen>
+    with SingleTickerProviderStateMixin {
   final PageController _pages = PageController();
-  late final AnimationController _loop = AnimationController(vsync: this, duration: const Duration(seconds: 4))..repeat();
+  late final AnimationController _loop = AnimationController(
+    vsync: this,
+    duration: const Duration(seconds: 4),
+  )..repeat();
   double _page = 0;
+  bool _finishing = false;
 
   static const _content = [
-    ('Capture like a pro', 'Instant photos, wallpaper-ready shots in every ratio, and ∞ Boomerangs that loop just right.'),
-    ('Reveal your Aura', 'Six on-device AI models read your face, pose, style and light, then turn it into your Aura score.'),
-    ('Rise to the top', 'Keep your daily streak alive and climb the global leaderboard.'),
+    (
+      'Capture like a pro',
+      'Instant photos, wallpaper-ready shots in every ratio, and ∞ Boomerangs that loop just right.',
+    ),
+    (
+      'Reveal your Aura',
+      'A playful score for your look, pose and lighting. Capture a moment and make it yours.',
+    ),
+    (
+      'Keep your streak alive',
+      'Capture a little every day and watch your daily streak grow.',
+    ),
   ];
 
   @override
   void initState() {
     super.initState();
     _pages.addListener(() => setState(() => _page = _pages.page ?? 0));
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (MediaQuery.disableAnimationsOf(context)) {
+      _loop.stop();
+    } else if (!_loop.isAnimating) {
+      _loop.repeat();
+    }
   }
 
   @override
@@ -40,10 +66,24 @@ class _OnboardingScreenState extends State<OnboardingScreen> with SingleTickerPr
   }
 
   Future<void> _finish() async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setBool('onboarding_seen', true);
-    if (!mounted) return;
-    Navigator.pushReplacement(context, AuraRoute(const RegistrationScreen()));
+    if (_finishing) return;
+    _finishing = true;
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setBool('onboarding_seen', true);
+      if (!mounted) return;
+      Navigator.pushReplacement(context, AuraRoute(const RegistrationScreen()));
+    } catch (_) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Could not continue. Please try again.'),
+          ),
+        );
+      }
+    } finally {
+      _finishing = false;
+    }
   }
 
   void _next() {
@@ -51,7 +91,10 @@ class _OnboardingScreenState extends State<OnboardingScreen> with SingleTickerPr
       _finish();
     } else {
       HapticFeedback.selectionClick();
-      _pages.nextPage(duration: const Duration(milliseconds: 450), curve: Curves.easeOutCubic);
+      _pages.nextPage(
+        duration: const Duration(milliseconds: 450),
+        curve: Curves.easeOutCubic,
+      );
     }
   }
 
@@ -59,7 +102,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> with SingleTickerPr
   Widget build(BuildContext context) {
     final bool last = _page.round() == _content.length - 1;
     return Scaffold(
-      backgroundColor: Colors.black,
+      backgroundColor: AuraColors.background,
       body: AuraBackdrop(
         child: SafeArea(
           child: Column(
@@ -71,7 +114,10 @@ class _OnboardingScreenState extends State<OnboardingScreen> with SingleTickerPr
                   duration: const Duration(milliseconds: 200),
                   child: TextButton(
                     onPressed: last ? null : _finish,
-                    child: const Text('Skip', style: TextStyle(color: Colors.white70, fontSize: 15)),
+                    child: const Text(
+                      'Skip',
+                      style: TextStyle(color: AuraColors.muted, fontSize: 15),
+                    ),
                   ),
                 ),
               ),
@@ -83,29 +129,55 @@ class _OnboardingScreenState extends State<OnboardingScreen> with SingleTickerPr
                   itemBuilder: (context, i) {
                     final double delta = (i - _page).clamp(-1.0, 1.0);
                     final (title, body) = _content[i];
-                    return Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 28),
-                      child: Column(
-                        children: [
-                          Expanded(
-                            child: Transform.translate(
-                              // Parallax: the illustration moves slower than the page
-                              offset: Offset(delta * 80, 0),
-                              child: Opacity(
-                                opacity: (1 - delta.abs()).clamp(0.0, 1.0),
-                                child: Center(child: _illustration(i)),
-                              ),
-                            ),
+                    return LayoutBuilder(
+                      builder: (context, bounds) => SingleChildScrollView(
+                        padding: const EdgeInsets.symmetric(horizontal: 28),
+                        child: ConstrainedBox(
+                          constraints: BoxConstraints(
+                            minHeight: bounds.maxHeight,
                           ),
-                          Text(title,
-                              textAlign: TextAlign.center,
-                              style: const TextStyle(color: Colors.white, fontSize: 30, fontWeight: FontWeight.w900)),
-                          const SizedBox(height: 12),
-                          Text(body,
-                              textAlign: TextAlign.center,
-                              style: const TextStyle(color: Colors.white70, fontSize: 16, height: 1.4)),
-                          const SizedBox(height: 28),
-                        ],
+                          child: Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              SizedBox(
+                                height: (bounds.maxHeight * .55).clamp(
+                                  140.0,
+                                  340.0,
+                                ),
+                                child: Transform.translate(
+                                  offset: Offset(delta * 60, 0),
+                                  child: Opacity(
+                                    opacity: (1 - delta.abs()).clamp(0.0, 1.0),
+                                    child: Center(
+                                      child: FittedBox(
+                                        fit: BoxFit.scaleDown,
+                                        child: _illustration(i),
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                              ),
+                              Text(
+                                title,
+                                textAlign: TextAlign.center,
+                                style: Theme.of(context)
+                                    .textTheme
+                                    .headlineLarge,
+                              ),
+                              const SizedBox(height: 12),
+                              Text(
+                                body,
+                                textAlign: TextAlign.center,
+                                style: const TextStyle(
+                                  color: AuraColors.muted,
+                                  fontSize: 16,
+                                  height: 1.45,
+                                ),
+                              ),
+                              const SizedBox(height: 28),
+                            ],
+                          ),
+                        ),
                       ),
                     );
                   },
@@ -116,19 +188,26 @@ class _OnboardingScreenState extends State<OnboardingScreen> with SingleTickerPr
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   for (int i = 0; i < _content.length; i++)
-                    Builder(builder: (context) {
-                      final double active = (1 - (i - _page).abs()).clamp(0.0, 1.0);
-                      return Container(
-                        margin: const EdgeInsets.symmetric(horizontal: 4),
-                        width: 8 + 18 * active,
-                        height: 8,
-                        decoration: BoxDecoration(
-                          borderRadius: BorderRadius.circular(4),
-                          gradient: active > 0.5 ? const LinearGradient(colors: kAuraGradient) : null,
-                          color: active > 0.5 ? null : Colors.white24,
-                        ),
-                      );
-                    }),
+                    Builder(
+                      builder: (context) {
+                        final double active = (1 - (i - _page).abs()).clamp(
+                          0.0,
+                          1.0,
+                        );
+                        return Container(
+                          margin: const EdgeInsets.symmetric(horizontal: 4),
+                          width: 8 + 18 * active,
+                          height: 8,
+                          decoration: BoxDecoration(
+                            borderRadius: BorderRadius.circular(4),
+                            gradient: active > 0.5
+                                ? const LinearGradient(colors: kAuraGradient)
+                                : null,
+                            color: active > 0.5 ? null : Colors.white24,
+                          ),
+                        );
+                      },
+                    ),
                 ],
               ),
               Padding(
@@ -157,24 +236,36 @@ class _OnboardingScreenState extends State<OnboardingScreen> with SingleTickerPr
           case 1:
             return _scoreIllustration(t);
           default:
-            return _leaderboardIllustration(t);
+            return _streakIllustration(t);
         }
       },
     );
   }
 
   Widget _chip(String text, {IconData? icon}) => Container(
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
-        decoration: BoxDecoration(
-          color: Colors.white.withValues(alpha: 0.1),
-          borderRadius: BorderRadius.circular(18),
-          border: Border.all(color: Colors.white24),
+    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
+    decoration: BoxDecoration(
+      color: Colors.white.withValues(alpha: 0.1),
+      borderRadius: BorderRadius.circular(18),
+      border: Border.all(color: Colors.white24),
+    ),
+    child: Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        if (icon != null) ...[
+          Icon(icon, size: 16, color: Colors.white),
+          const SizedBox(width: 6),
+        ],
+        Text(
+          text,
+          style: const TextStyle(
+            color: Colors.white,
+            fontWeight: FontWeight.w700,
+          ),
         ),
-        child: Row(mainAxisSize: MainAxisSize.min, children: [
-          if (icon != null) ...[Icon(icon, size: 16, color: Colors.white), const SizedBox(width: 6)],
-          Text(text, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w700)),
-        ]),
-      );
+      ],
+    ),
+  );
 
   /// Shutter with floating feature chips.
   Widget _cameraIllustration(double t) {
@@ -190,21 +281,48 @@ class _OnboardingScreenState extends State<OnboardingScreen> with SingleTickerPr
             height: 132,
             decoration: BoxDecoration(
               shape: BoxShape.circle,
-              border: Border.all(color: const Color(0xFF7C4DFF), width: 6),
-              boxShadow: [BoxShadow(color: kAuraGradient[1].withValues(alpha: 0.4), blurRadius: 40)],
+              border: Border.all(color: AuraColors.violet, width: 6),
+              boxShadow: [
+                BoxShadow(
+                  color: kAuraGradient[1].withValues(alpha: 0.4),
+                  blurRadius: 40,
+                ),
+              ],
             ),
             child: Center(
               child: Container(
                 width: 98 * (0.94 + 0.06 * math.sin(t * 2 * math.pi)),
                 height: 98 * (0.94 + 0.06 * math.sin(t * 2 * math.pi)),
-                decoration: const BoxDecoration(shape: BoxShape.circle, color: Colors.white),
+                decoration: const BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: Colors.white,
+                ),
               ),
             ),
           ),
-          Positioned(top: 30 + bob(0), left: 10, child: _chip('Boomerang', icon: Icons.all_inclusive)),
-          Positioned(top: 60 + bob(0.33), right: 4, child: _chip('16:9 Wallpaper', icon: Icons.desktop_windows_outlined)),
-          Positioned(bottom: 40 + bob(0.66), left: 30, child: _chip('4:5', icon: Icons.crop_portrait)),
-          Positioned(bottom: 20 + bob(0.15), right: 30, child: _chip('Zoom', icon: Icons.zoom_in)),
+          Positioned(
+            top: 30 + bob(0),
+            left: 10,
+            child: _chip('Boomerang', icon: Icons.all_inclusive),
+          ),
+          Positioned(
+            top: 60 + bob(0.33),
+            right: 4,
+            child: _chip(
+              '16:9 Wallpaper',
+              icon: Icons.desktop_windows_outlined,
+            ),
+          ),
+          Positioned(
+            bottom: 40 + bob(0.66),
+            left: 30,
+            child: _chip('4:5', icon: Icons.crop_portrait),
+          ),
+          Positioned(
+            bottom: 20 + bob(0.15),
+            right: 30,
+            child: _chip('Zoom', icon: Icons.zoom_in),
+          ),
         ],
       ),
     );
@@ -212,7 +330,10 @@ class _OnboardingScreenState extends State<OnboardingScreen> with SingleTickerPr
 
   /// Orb with a score counting up and orbiting findings.
   Widget _scoreIllustration(double t) {
-    final int score = (99999999 * Curves.easeOutCubic.transform((t * 1.3).clamp(0.0, 1.0))).round() | 1;
+    final int score =
+        (99999999 * Curves.easeOutCubic.transform((t * 1.3).clamp(0.0, 1.0)))
+            .round() |
+        1;
     const tags = ['Symmetry', 'Gaze', 'Smile', 'Style', 'Light', 'Pose'];
     return SizedBox(
       width: 300,
@@ -222,20 +343,31 @@ class _OnboardingScreenState extends State<OnboardingScreen> with SingleTickerPr
         children: [
           const AuraOrb(size: 150),
           for (int k = 0; k < tags.length; k++)
-            Builder(builder: (context) {
-              final double a = (t + k / tags.length) * 2 * math.pi;
-              return Transform.translate(
-                offset: Offset(math.cos(a) * 125, math.sin(a) * 95),
-                child: Opacity(opacity: 0.55 + 0.45 * math.sin(a).abs(), child: _chip(tags[k])),
-              );
-            }),
+            Builder(
+              builder: (context) {
+                final double a = (t + k / tags.length) * 2 * math.pi;
+                return Transform.translate(
+                  offset: Offset(math.cos(a) * 125, math.sin(a) * 95),
+                  child: Opacity(
+                    opacity: 0.55 + 0.45 * math.sin(a).abs(),
+                    child: _chip(tags[k]),
+                  ),
+                );
+              },
+            ),
           Positioned(
             bottom: 0,
             child: ShaderMask(
-              shaderCallback: (r) => const LinearGradient(colors: kAuraGradient).createShader(r),
+              shaderCallback: (r) =>
+                  const LinearGradient(colors: kAuraGradient).createShader(r),
               child: Text(
                 '+${score.toString().replaceAllMapped(RegExp(r'(\d)(?=(\d{3})+$)'), (m) => '${m[1]},')}',
-                style: const TextStyle(color: Colors.white, fontSize: 30, fontWeight: FontWeight.w900, fontFeatures: [FontFeature.tabularFigures()]),
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 30,
+                  fontWeight: FontWeight.w900,
+                  fontFeatures: [FontFeature.tabularFigures()],
+                ),
               ),
             ),
           ),
@@ -244,45 +376,25 @@ class _OnboardingScreenState extends State<OnboardingScreen> with SingleTickerPr
     );
   }
 
-  /// Podium with a streak flame.
-  Widget _leaderboardIllustration(double t) {
-    Widget bar(double height, String rank, double grow) => Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Text(rank, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w900, fontSize: 20)),
-            const SizedBox(height: 6),
-            Container(
-              width: 70,
-              height: height * grow,
-              decoration: BoxDecoration(
-                borderRadius: const BorderRadius.vertical(top: Radius.circular(12)),
-                gradient: const LinearGradient(colors: kAuraGradient, begin: Alignment.topCenter, end: Alignment.bottomCenter),
-                boxShadow: [BoxShadow(color: kAuraGradient[0].withValues(alpha: 0.35), blurRadius: 20)],
-              ),
-            ),
-          ],
-        );
-    final double grow = Curves.easeOutBack.transform((t * 2).clamp(0.0, 1.0));
-    final double flame = 1 + 0.08 * math.sin(t * 6 * math.pi);
+  /// A daily streak flame.
+  Widget _streakIllustration(double t) {
+    final double pulse = 1 + 0.08 * math.sin(t * 6 * math.pi);
     return SizedBox(
       width: 300,
       height: 300,
-      child: Stack(
-        alignment: Alignment.bottomCenter,
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            crossAxisAlignment: CrossAxisAlignment.end,
-            children: [bar(110, '2', grow), const SizedBox(width: 10), bar(160, '1', grow), const SizedBox(width: 10), bar(80, '3', grow)],
-          ),
-          Positioned(
-            top: 10,
-            right: 20,
-            child: Transform.scale(
-              scale: flame,
-              child: _chip('7 day streak', icon: Icons.local_fire_department),
+          Transform.scale(
+            scale: pulse,
+            child: const Icon(
+              Icons.local_fire_department_rounded,
+              size: 150,
+              color: AuraColors.yellow,
             ),
           ),
+          const SizedBox(height: 24),
+          _chip('7 day streak', icon: Icons.local_fire_department),
         ],
       ),
     );

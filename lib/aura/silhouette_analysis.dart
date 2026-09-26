@@ -27,7 +27,7 @@ class SilhouetteMetrics {
   static SilhouetteMetrics fromMask(List<double> maskValues, int width, int height, Pose? pose) {
     final mask = maskValues is Float32List ? maskValues : Float32List.fromList(maskValues);
     final int n = width * height;
-    if (mask.length < n) {
+    if (n <= 0 || mask.length != n) {
       return SilhouetteMetrics(coverage: 0, crispness: 0);
     }
     int fg = 0, sure = 0;
@@ -36,8 +36,8 @@ class SilhouetteMetrics {
       if (v > 0.5) fg++;
       if (v < 0.1 || v > 0.9) sure++;
     }
-    final double coverage = fg / (n / 2);
-    final double crispness = sure / (n / 2);
+    final double coverage = fg / ((n + 1) ~/ 2);
+    final double crispness = sure / ((n + 1) ~/ 2);
 
     double? shoulderW, waistW, hipW;
     PoseLandmark? get(PoseLandmarkType t) {

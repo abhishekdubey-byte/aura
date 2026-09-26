@@ -1,3 +1,4 @@
+import 'package:aura/theme/aura_theme.dart';
 import 'package:flutter/material.dart';
 
 import 'aura_brand.dart';
@@ -9,7 +10,9 @@ class AgeRules {
   /// Whole years between [dob] and [now].
   static int ageOn(DateTime dob, DateTime now) {
     int age = now.year - dob.year;
-    if (now.month < dob.month || (now.month == dob.month && now.day < dob.day)) age--;
+    if (now.month < dob.month || (now.month == dob.month && now.day < dob.day)) {
+      age--;
+    }
     return age;
   }
 
@@ -19,13 +22,31 @@ class AgeRules {
 /// Tappable date-of-birth field: opens a dark date picker and shows the
 /// chosen date with the resulting age, turning red if under 18.
 class DobField extends StatelessWidget {
-  const DobField({super.key, required this.value, required this.onChanged, this.errorText});
+  const DobField({
+    super.key,
+    required this.value,
+    required this.onChanged,
+    this.errorText,
+  });
 
   final DateTime? value;
   final ValueChanged<DateTime> onChanged;
   final String? errorText;
 
-  static const _months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+  static const _months = [
+    'Jan',
+    'Feb',
+    'Mar',
+    'Apr',
+    'May',
+    'Jun',
+    'Jul',
+    'Aug',
+    'Sep',
+    'Oct',
+    'Nov',
+    'Dec',
+  ];
 
   Future<void> _pick(BuildContext context) async {
     final now = DateTime.now();
@@ -36,20 +57,8 @@ class DobField extends StatelessWidget {
       lastDate: now,
       initialEntryMode: DatePickerEntryMode.calendarOnly,
       helpText: 'Your date of birth',
-      builder: (context, child) => Theme(
-        data: ThemeData.dark().copyWith(
-          colorScheme: const ColorScheme.dark(
-            primary: Color(0xFFE040FB),
-            onPrimary: Colors.white,
-            surface: Color(0xFF17121F),
-            onSurface: Colors.white,
-          ),
-          dialogTheme: const DialogThemeData(backgroundColor: Color(0xFF17121F)),
-        ),
-        child: child!,
-      ),
     );
-    if (picked != null) onChanged(picked);
+    if (picked != null && context.mounted) onChanged(picked);
   }
 
   @override
@@ -57,7 +66,9 @@ class DobField extends StatelessWidget {
     final DateTime? dob = value;
     final int? age = dob == null ? null : AgeRules.ageOn(dob, DateTime.now());
     final bool underage = age != null && age < AgeRules.minimumAge;
-    final Color accent = errorText != null || underage ? Colors.redAccent : Colors.white24;
+    final Color accent = errorText != null || underage
+        ? AuraColors.error
+        : Colors.white24;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -74,25 +85,41 @@ class DobField extends StatelessWidget {
             ),
             child: Row(
               children: [
-                const Icon(Icons.cake_outlined, color: Colors.white60),
+                const Icon(Icons.cake_outlined, color: AuraColors.muted),
                 const SizedBox(width: 12),
                 Expanded(
                   child: Text(
-                    dob == null ? 'Date of birth' : '${dob.day} ${_months[dob.month - 1]} ${dob.year}',
-                    style: TextStyle(color: dob == null ? Colors.white54 : Colors.white, fontSize: 16),
+                    dob == null
+                        ? 'Date of birth'
+                        : '${dob.day} ${_months[dob.month - 1]} ${dob.year}',
+                    style: TextStyle(
+                      color: dob == null ? AuraColors.muted : Colors.white,
+                      fontSize: 16,
+                    ),
                   ),
                 ),
                 if (age != null)
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 10,
+                      vertical: 4,
+                    ),
                     decoration: BoxDecoration(
                       borderRadius: BorderRadius.circular(12),
-                      gradient: underage ? null : const LinearGradient(colors: kAuraGradient),
-                      color: underage ? Colors.redAccent.withValues(alpha: 0.2) : null,
+                      gradient: underage
+                          ? null
+                          : const LinearGradient(colors: kAuraGradient),
+                      color: underage
+                          ? AuraColors.error.withValues(alpha: 0.2)
+                          : null,
                     ),
                     child: Text(
                       '$age yrs',
-                      style: TextStyle(color: underage ? Colors.redAccent : Colors.white, fontWeight: FontWeight.w700, fontSize: 12.5),
+                      style: TextStyle(
+                        color: underage ? AuraColors.error : Colors.white,
+                        fontWeight: FontWeight.w700,
+                        fontSize: 12.5,
+                      ),
                     ),
                   ),
               ],
@@ -105,7 +132,13 @@ class DobField extends StatelessWidget {
               ? const SizedBox(width: double.infinity)
               : Padding(
                   padding: const EdgeInsets.only(top: 6, left: 4),
-                  child: Text(errorText!, style: const TextStyle(color: Colors.redAccent, fontSize: 12.5)),
+                  child: Text(
+                    errorText!,
+                    style: const TextStyle(
+                      color: AuraColors.error,
+                      fontSize: 12.5,
+                    ),
+                  ),
                 ),
         ),
       ],

@@ -1,5 +1,4 @@
 import 'dart:math';
-import 'package:flutter/foundation.dart';
 
 class MathUtils {
   static const double epsilon = 1e-9;

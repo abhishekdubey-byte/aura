@@ -1,12 +1,16 @@
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:timezone/data/latest.dart' as tz;
 import 'package:flutter/foundation.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class ReminderService {
   static final FlutterLocalNotificationsPlugin _notificationsPlugin =
       FlutterLocalNotificationsPlugin();
 
-  static Future<void> init() async {
+  static Future<void>? _ready;
+  static Future<void> init() => _ready ??= _initialize();
+
+  static Future<void> _initialize() async {
     // Initialize time zones for scheduling
     tz.initializeTimeZones();
 
@@ -18,21 +22,21 @@ class ReminderService {
     // Permission is asked later (after registration), not at app start
     const DarwinInitializationSettings initializationSettingsIOS =
         DarwinInitializationSettings(
-      requestAlertPermission: false,
-      requestBadgePermission: false,
-      requestSoundPermission: false,
-    );
+          requestAlertPermission: false,
+          requestBadgePermission: false,
+          requestSoundPermission: false,
+        );
 
-    const InitializationSettings initializationSettings = InitializationSettings(
-      android: initializationSettingsAndroid,
-      iOS: initializationSettingsIOS,
-    );
+    const InitializationSettings initializationSettings =
+        InitializationSettings(
+          android: initializationSettingsAndroid,
+          iOS: initializationSettingsIOS,
+        );
 
     await _notificationsPlugin.initialize(
       settings: initializationSettings,
       onDidReceiveNotificationResponse: _onNotificationTapped,
     );
-
   }
 
   /// Asks for notification permission (Android 13+ / iOS). Called once the
@@ -41,11 +45,16 @@ class ReminderService {
   static Future<void> requestPermission() async {
     if (kIsWeb) return;
     try {
+      await init();
       await _notificationsPlugin
-          .resolvePlatformSpecificImplementation<AndroidFlutterLocalNotificationsPlugin>()
+          .resolvePlatformSpecificImplementation<
+            AndroidFlutterLocalNotificationsPlugin
+          >()
           ?.requestNotificationsPermission();
       await _notificationsPlugin
-          .resolvePlatformSpecificImplementation<IOSFlutterLocalNotificationsPlugin>()
+          .resolvePlatformSpecificImplementation<
+            IOSFlutterLocalNotificationsPlugin
+          >()
           ?.requestPermissions(alert: true, badge: true, sound: true);
     } catch (e) {
       debugPrint('Notification permission request failed: $e');
@@ -57,17 +66,31 @@ class ReminderService {
     // We could navigate to a specific screen here if needed.
   }
 
+  static Future<void> cancel() async {
+    await init();
+    await _notificationsPlugin.cancel(id: 0);
+  }
+
   static Future<void> schedulePeriodicReminder() async {
+    await init();
+    final prefs = await SharedPreferences.getInstance();
+    if (!(prefs.getBool('registered_flag') ?? false) ||
+        !(prefs.getBool('reminders_enabled') ?? true)) {
+      await cancel();
+      return;
+    }
     const AndroidNotificationDetails androidPlatformChannelSpecifics =
         AndroidNotificationDetails(
-      'aura_reminder_channel', // id
-      'AURA Reminders', // title
-      channelDescription: 'Periodic reminders to check your AURA',
-      importance: Importance.max,
-      priority: Priority.high,
+          'aura_reminder_channel', // id
+          'AURA Reminders', // title
+          channelDescription: 'Periodic reminders to check your AURA',
+          importance: Importance.max,
+          priority: Priority.high,
+        );
+    const NotificationDetails platformChannelSpecifics = NotificationDetails(
+      android: androidPlatformChannelSpecifics,
+      iOS: DarwinNotificationDetails(),
     );
-    const NotificationDetails platformChannelSpecifics =
-        NotificationDetails(android: androidPlatformChannelSpecifics);
 
     await _notificationsPlugin.periodicallyShow(
       id: 0,

@@ -1,10 +1,17 @@
+import 'package:aura/theme/aura_theme.dart';
 import 'package:aura/camera/capture_aspect.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 /// Outline of a rectangle at [ratio] (width / height), fitted in a square.
 class AspectIcon extends StatelessWidget {
-  const AspectIcon({super.key, required this.ratio, this.size = 18, this.color = Colors.white, this.strokeWidth = 1.8});
+  const AspectIcon({
+    super.key,
+    required this.ratio,
+    this.size = 18,
+    this.color = Colors.white,
+    this.strokeWidth = 1.8,
+  });
 
   final double ratio;
   final double size;
@@ -44,8 +51,10 @@ Future<CaptureAspect?> showAspectRatioPicker(
   return showModalBottomSheet<CaptureAspect>(
     context: context,
     isScrollControlled: true,
-    backgroundColor: const Color(0xFF141416),
-    shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(24))),
+    backgroundColor: AuraColors.surface,
+    shape: const RoundedRectangleBorder(
+      borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+    ),
     builder: (context) => _AspectPickerSheet(
       current: current,
       screen: screen,
@@ -57,7 +66,13 @@ Future<CaptureAspect?> showAspectRatioPicker(
 }
 
 class _AspectPickerSheet extends StatelessWidget {
-  const _AspectPickerSheet({required this.current, required this.screen, required this.photoFrame, required this.videoFrame, required this.showOutputResolution});
+  const _AspectPickerSheet({
+    required this.current,
+    required this.screen,
+    required this.photoFrame,
+    required this.videoFrame,
+    required this.showOutputResolution,
+  });
 
   final CaptureAspect current;
   final Size screen;
@@ -91,28 +106,43 @@ class _AspectPickerSheet extends StatelessWidget {
             child: Container(
               width: 40,
               height: 4,
-              decoration: BoxDecoration(color: Colors.white24, borderRadius: BorderRadius.circular(2)),
+              decoration: BoxDecoration(
+                color: Colors.white24,
+                borderRadius: BorderRadius.circular(2),
+              ),
             ),
           ),
           const SizedBox(height: 14),
-          const Text('Aspect ratio', style: TextStyle(color: Colors.white, fontSize: 20, fontWeight: FontWeight.w800)),
+          const Text(
+            'Aspect ratio',
+            style: TextStyle(
+              color: Colors.white,
+              fontSize: 20,
+              fontWeight: FontWeight.w800,
+            ),
+          ),
           const SizedBox(height: 4),
           const Text(
             'The viewfinder shows exactly what gets saved.',
-            style: TextStyle(color: Colors.white54, fontSize: 13),
+            style: TextStyle(color: AuraColors.muted, fontSize: 13),
           ),
           for (final category in AspectCategory.values) ...[
             const SizedBox(height: 18),
             Text(
               category.title.toUpperCase(),
-              style: const TextStyle(color: Colors.white54, fontSize: 12, fontWeight: FontWeight.w700, letterSpacing: 1.1),
+              style: const TextStyle(
+                color: AuraColors.muted,
+                fontSize: 12,
+                fontWeight: FontWeight.w700,
+                letterSpacing: 1.1,
+              ),
             ),
             if (category == AspectCategory.desktop)
               const Padding(
                 padding: EdgeInsets.only(top: 4),
                 child: Text(
                   'Shoot a wallpaper that fits your laptop or monitor exactly.',
-                  style: TextStyle(color: Colors.white38, fontSize: 12),
+                  style: TextStyle(color: AuraColors.muted, fontSize: 12),
                 ),
               ),
             const SizedBox(height: 10),
@@ -123,7 +153,9 @@ class _AspectPickerSheet extends StatelessWidget {
                   spacing: 10,
                   runSpacing: 10,
                   children: [
-                    for (final aspect in CaptureAspect.values.where((a) => a.category == category))
+                    for (final aspect in CaptureAspect.values.where(
+                      (a) => a.category == category,
+                    ))
                       SizedBox(width: tileWidth, child: _tile(context, aspect)),
                   ],
                 );
@@ -138,9 +170,14 @@ class _AspectPickerSheet extends StatelessWidget {
   Widget _tile(BuildContext context, CaptureAspect aspect) {
     final bool selected = aspect == current;
     final double ratio = aspect.resolveRatio(screen);
-    final Size? photo = photoFrame == null ? null : cropResolution(photoFrame!, ratio);
+    final Size? photo = photoFrame == null
+        ? null
+        : cropResolution(photoFrame!, ratio);
     final Size video = cropResolution(videoFrame, ratio);
-    final String? tag = aspect.category == AspectCategory.desktop && photo != null ? _wallpaperTag(photo) : null;
+    final String? tag =
+        aspect.category == AspectCategory.desktop && photo != null
+        ? _wallpaperTag(photo)
+        : null;
 
     return GestureDetector(
       onTap: () {
@@ -151,14 +188,23 @@ class _AspectPickerSheet extends StatelessWidget {
         duration: const Duration(milliseconds: 180),
         padding: const EdgeInsets.all(12),
         decoration: BoxDecoration(
-          color: selected ? Colors.amber.withValues(alpha: 0.14) : Colors.white.withValues(alpha: 0.06),
+          color: selected
+              ? AuraColors.primary.withValues(alpha: 0.14)
+              : Colors.white.withValues(alpha: 0.06),
           borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: selected ? Colors.amber : Colors.white12, width: selected ? 1.6 : 1),
+          border: Border.all(
+            color: selected ? AuraColors.primary : Colors.white12,
+            width: selected ? 1.6 : 1,
+          ),
         ),
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            AspectIcon(ratio: ratio, size: 30, color: selected ? Colors.amber : Colors.white70),
+            AspectIcon(
+              ratio: ratio,
+              size: 30,
+              color: selected ? AuraColors.primary : AuraColors.muted,
+            ),
             const SizedBox(width: 10),
             Expanded(
               child: Column(
@@ -170,7 +216,7 @@ class _AspectPickerSheet extends StatelessWidget {
                         child: Text(
                           aspect.label,
                           style: TextStyle(
-                            color: selected ? Colors.amber : Colors.white,
+                            color: selected ? AuraColors.primary : Colors.white,
                             fontSize: 16,
                             fontWeight: FontWeight.w800,
                           ),
@@ -179,20 +225,52 @@ class _AspectPickerSheet extends StatelessWidget {
                       if (tag != null) ...[
                         const SizedBox(width: 6),
                         Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1),
-                          decoration: BoxDecoration(color: Colors.white12, borderRadius: BorderRadius.circular(6)),
-                          child: Text(tag, style: const TextStyle(color: Colors.white70, fontSize: 10, fontWeight: FontWeight.w700)),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 5,
+                            vertical: 1,
+                          ),
+                          decoration: BoxDecoration(
+                            color: Colors.white12,
+                            borderRadius: BorderRadius.circular(6),
+                          ),
+                          child: Text(
+                            tag,
+                            style: const TextStyle(
+                              color: AuraColors.muted,
+                              fontSize: 10,
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
                         ),
                       ],
                     ],
                   ),
                   const SizedBox(height: 3),
-                  Text(aspect.useCase, style: const TextStyle(color: Colors.white60, fontSize: 11.5, height: 1.25)),
+                  Text(
+                    aspect.useCase,
+                    style: const TextStyle(
+                      color: AuraColors.muted,
+                      fontSize: 11.5,
+                      height: 1.25,
+                    ),
+                  ),
                   const SizedBox(height: 5),
                   if (showOutputResolution && photo != null)
-                    Text('Photo ${_format(photo)}', style: const TextStyle(color: Colors.white38, fontSize: 10.5)),
+                    Text(
+                      'Photo ${_format(photo)}',
+                      style: const TextStyle(
+                        color: AuraColors.muted,
+                        fontSize: 10.5,
+                      ),
+                    ),
                   if (showOutputResolution)
-                    Text('Video ${_format(video)}', style: const TextStyle(color: Colors.white38, fontSize: 10.5)),
+                    Text(
+                      'Video ${_format(video)}',
+                      style: const TextStyle(
+                        color: AuraColors.muted,
+                        fontSize: 10.5,
+                      ),
+                    ),
                 ],
               ),
             ),
@@ -214,7 +292,10 @@ class ViewfinderMaskPainter extends CustomPainter {
   void paint(Canvas canvas, Size size) {
     final Rect screen = Offset.zero & size;
     final Rect visible = crop.intersect(screen);
-    if (visible.width >= screen.width - 0.5 && visible.height >= screen.height - 0.5) return;
+    if (visible.width >= screen.width - 0.5 &&
+        visible.height >= screen.height - 0.5) {
+      return;
+    }
     canvas.drawPath(
       Path()
         ..fillType = PathFillType.evenOdd

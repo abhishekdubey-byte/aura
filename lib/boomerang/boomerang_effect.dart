@@ -1,9 +1,10 @@
 import 'dart:math' as math;
+import '../theme/aura_theme.dart';
 
 import 'package:flutter/material.dart';
 
 /// Brand gradient for everything Boomerang (∞).
-const List<Color> kBoomerangGradient = [Color(0xFF7C4DFF), Color(0xFFE040FB), Color(0xFFFF4D8D), Color(0xFFFFA24D)];
+const List<Color> kBoomerangGradient = AuraColors.gradient;
 
 /// How a clip is played back and forth.
 ///

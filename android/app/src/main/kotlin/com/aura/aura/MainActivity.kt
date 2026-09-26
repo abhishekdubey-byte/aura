@@ -14,9 +14,11 @@ class MainActivity : FlutterActivity() {
     private var eventSink: EventChannel.EventSink? = null
     private var mediaActionSound: MediaActionSound? = null
     private var imageProcessor: ImageProcessor? = null
+    private var handsFree: HandsFreeBridge? = null
 
     override fun configureFlutterEngine(flutterEngine: FlutterEngine) {
         super.configureFlutterEngine(flutterEngine)
+        handsFree = HandsFreeBridge(applicationContext, flutterEngine.dartExecutor.binaryMessenger)
         EventChannel(flutterEngine.dartExecutor.binaryMessenger, CHANNEL).setStreamHandler(
             object : EventChannel.StreamHandler {
                 override fun onListen(arguments: Any?, events: EventChannel.EventSink?) {
@@ -53,9 +55,18 @@ class MainActivity : FlutterActivity() {
         val processor = ImageProcessor()
         imageProcessor = processor
         MethodChannel(flutterEngine.dartExecutor.binaryMessenger, IMAGE_CHANNEL).setMethodCallHandler(processor)
+        MethodChannel(flutterEngine.dartExecutor.binaryMessenger, "com.aura.aura/uploads")
+            .setMethodCallHandler(CaptureUploads(applicationContext))
+    }
+
+    override fun onPause() {
+        handsFree?.pause()
+        super.onPause()
     }
 
     override fun onDestroy() {
+        handsFree?.close()
+        handsFree = null
         mediaActionSound?.release()
         mediaActionSound = null
         imageProcessor?.shutdown()

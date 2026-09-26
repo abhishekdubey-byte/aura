@@ -1,69 +1,45 @@
 import 'package:shared_preferences/shared_preferences.dart';
 
 class StreakService {
-  static const String _lastOpenedKey = 'last_opened_date';
-  static const String _streakCountKey = 'streak_count';
+  static const _lastOpenedKey = 'last_opened_date';
+  static const _streakCountKey = 'streak_count';
+  static Future<void> _queue = Future.value();
+
+  /// Compare calendar dates in UTC to avoid DST's 23/25-hour local days.
+  static int calendarDays(DateTime from, DateTime to) => DateTime.utc(
+    to.year,
+    to.month,
+    to.day,
+  ).difference(DateTime.utc(from.year, from.month, from.day)).inDays;
 
   static Future<int> getStreak() async {
     final prefs = await SharedPreferences.getInstance();
-    int streak = prefs.getInt(_streakCountKey) ?? 0;
-    String? lastOpenedStr = prefs.getString(_lastOpenedKey);
-    
-    if (lastOpenedStr != null) {
-      DateTime lastOpened = DateTime.parse(lastOpenedStr);
-      DateTime now = DateTime.now();
-      
-      // Calculate difference in calendar days
-      DateTime date1 = DateTime(lastOpened.year, lastOpened.month, lastOpened.day);
-      DateTime date2 = DateTime(now.year, now.month, now.day);
-      int diffInDays = date2.difference(date1).inDays;
-
-      if (diffInDays > 1) {
-        // Streak broken
-        streak = 0;
-      }
-    }
-    return streak;
+    final last = DateTime.tryParse(prefs.getString(_lastOpenedKey) ?? '');
+    if (last == null || calendarDays(last, DateTime.now()) > 1) return 0;
+    return (prefs.getInt(_streakCountKey) ?? 0).clamp(0, 1000000);
   }
 
-  static Future<({int count, bool justIncreased})> incrementStreak() async {
-    final prefs = await SharedPreferences.getInstance();
-    int streak = prefs.getInt(_streakCountKey) ?? 0;
-    String? lastOpenedStr = prefs.getString(_lastOpenedKey);
-    
-    DateTime now = DateTime.now();
-    bool shouldIncrement = false;
-
-    if (lastOpenedStr == null) {
-      shouldIncrement = true;
-      streak = 1;
-    } else {
-      DateTime lastOpened = DateTime.parse(lastOpenedStr);
-      
-      DateTime date1 = DateTime(lastOpened.year, lastOpened.month, lastOpened.day);
-      DateTime date2 = DateTime(now.year, now.month, now.day);
-      int diffInDays = date2.difference(date1).inDays;
-
-      if (diffInDays == 1) {
-        // Next day!
-        streak++;
-        shouldIncrement = true;
-      } else if (diffInDays > 1) {
-        // Missed a day!
-        streak = 1;
-        shouldIncrement = true;
-      }
-      // If diffInDays == 0, they already opened it today, streak stays the same, we update the timestamp.
-      if (diffInDays == 0) {
+  static Future<({int count, bool justIncreased})> incrementStreak() {
+    final result = _queue.then((_) async {
+      final prefs = await SharedPreferences.getInstance();
+      final now = DateTime.now();
+      final last = DateTime.tryParse(prefs.getString(_lastOpenedKey) ?? '');
+      final count = (prefs.getInt(_streakCountKey) ?? 0).clamp(0, 1000000);
+      final days = last == null ? 2 : calendarDays(last, now);
+      final increased = last == null || days > 0 || count == 0;
+      final next = !increased
+          ? count
+          : days == 1
+          ? count + 1
+          : 1;
+      // Clock rollback must not move the anchor backward and double-count a day.
+      if (increased) {
+        await prefs.setInt(_streakCountKey, next);
         await prefs.setString(_lastOpenedKey, now.toIso8601String());
       }
-    }
-
-    if (shouldIncrement) {
-      await prefs.setInt(_streakCountKey, streak);
-      await prefs.setString(_lastOpenedKey, now.toIso8601String());
-    }
-
-    return (count: streak, justIncreased: shouldIncrement && streak > 0);
+      return (count: next, justIncreased: increased);
+    });
+    _queue = result.then((_) {}, onError: (_) {});
+    return result;
   }
 }

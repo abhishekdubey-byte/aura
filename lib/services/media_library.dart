@@ -41,7 +41,11 @@ class MediaLibrary {
   static bool _accessChecked = false;
 
   /// Returns the (renamed) local file that was saved.
-  static Future<String> saveImage(String path, MediaAlbum album, {bool keepSource = false}) async {
+  static Future<String> saveImage(
+    String path,
+    MediaAlbum album, {
+    bool keepSource = false,
+  }) async {
     await _ensureAccess();
     final named = await _named(path, album, keepSource: keepSource);
     await Gal.putImage(named, album: album.album);
@@ -53,7 +57,11 @@ class MediaLibrary {
     await Gal.putImageBytes(bytes, album: album.album, name: _fileStem(album));
   }
 
-  static Future<void> saveVideo(String path, MediaAlbum album, {bool keepSource = false}) async {
+  static Future<void> saveVideo(
+    String path,
+    MediaAlbum album, {
+    bool keepSource = false,
+  }) async {
     await _ensureAccess();
     final named = await _named(path, album, keepSource: keepSource);
     await Gal.putVideo(named, album: album.album);
@@ -62,12 +70,13 @@ class MediaLibrary {
   /// Saving into an album needs storage permission on Android 9/10 only.
   static Future<void> _ensureAccess() async {
     if (_accessChecked) return;
-    try {
+    if (!await Gal.hasAccess(toAlbum: true)) {
+      await Gal.requestAccess(toAlbum: true);
       if (!await Gal.hasAccess(toAlbum: true)) {
-        await Gal.requestAccess(toAlbum: true);
+        throw StateError(
+          'Gallery access is required to save this photo or video',
+        );
       }
-    } catch (e) {
-      debugPrint('MediaLibrary: access check failed: $e');
     }
     _accessChecked = true;
   }
@@ -84,10 +93,17 @@ class MediaLibrary {
 
   /// The gallery keeps the source file's name, so give it a proper one first.
   /// Moves the temp file, or copies it when the app still shows the source.
-  static Future<String> _named(String path, MediaAlbum album, {bool keepSource = false}) async {
+  static Future<String> _named(
+    String path,
+    MediaAlbum album, {
+    bool keepSource = false,
+  }) async {
     final int dot = path.lastIndexOf('.');
-    final String extension = dot > path.lastIndexOf('/') ? path.substring(dot) : '';
-    final String target = '${(await getTemporaryDirectory()).path}/${_fileStem(album)}$extension';
+    final String extension = dot > path.lastIndexOf('/')
+        ? path.substring(dot)
+        : '';
+    final String target =
+        '${(await getTemporaryDirectory()).path}/${_fileStem(album)}$extension';
     try {
       if (!keepSource) return (await File(path).rename(target)).path;
     } catch (_) {

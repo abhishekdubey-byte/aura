@@ -1,4 +1,8 @@
+import 'package:aura/services/upload_manager.dart';
+
 import 'dart:io';
+
+import 'package:aura/theme/aura_theme.dart';
 
 import 'package:aura/main.dart' as app;
 import 'package:aura/camera/capture_aspect.dart';
@@ -18,7 +22,17 @@ import 'package:integration_test/integration_test.dart';
 import 'package:path_provider/path_provider.dart';
 
 void main() {
+  // Device camera/export tests must not upload real scene photos.
+  UploadManager.instance.suspendForTesting = true;
   IntegrationTestWidgetsFlutterBinding.ensureInitialized();
+  setUp(() {
+    // The binding resets lifecycle state between tests, but Android only emits
+    // a resume event when the Activity actually resumes. Seed the visible state
+    // for tests that mount a screen directly rather than relaunching the app.
+    WidgetsBinding.instance.handleAppLifecycleStateChanged(
+      AppLifecycleState.resumed,
+    );
+  });
   testWidgets(
     'Normal-only entry, photo/video/hybrid capture, retake and restore',
     (tester) async {
@@ -33,7 +47,7 @@ void main() {
       app.cameras = await availableCameras();
       expect(app.cameras, isNotEmpty);
       await tester.pumpWidget(
-        MaterialApp(theme: ThemeData.dark(), home: const app.CameraScreen()),
+        MaterialApp(theme: AuraTheme.dark, home: const app.CameraScreen()),
       );
       await until(
         () => find
@@ -46,18 +60,49 @@ void main() {
       final layout = tester.getTopLeft(
         find.byKey(const ValueKey('normal-layout-button')),
       );
-      expect(layout.dy, greaterThan(flash.dy));
-      await tester.tap(find.text('Boomerang'));
-      await tester.pump(const Duration(milliseconds: 400));
-      expect(find.byKey(const ValueKey('normal-layout-button')), findsNothing);
-      await tester.tap(find.text('Aura Calc'));
-      await tester.pump(const Duration(milliseconds: 400));
-      expect(find.byKey(const ValueKey('normal-layout-button')), findsNothing);
-      await tester.tap(find.text('Normal'));
+      expect(layout.dy, closeTo(flash.dy, 8));
+      expect(
+        layout.dy,
+        greaterThan(
+          tester.view.physicalSize.height / tester.view.devicePixelRatio / 2,
+        ),
+      );
+      final boomerang = find.byKey(const ValueKey('mode-boomerang'));
+      final aura = find.byKey(const ValueKey('mode-aura'));
+      expect(tester.getTopLeft(boomerang).dy, greaterThan(layout.dy));
+      expect(
+        tester.getTopLeft(aura).dy,
+        closeTo(tester.getTopLeft(boomerang).dy, 8),
+      );
+      await tester.tap(boomerang);
       await tester.pump(const Duration(milliseconds: 400));
       expect(
-        find.byKey(const ValueKey('normal-layout-button')),
-        findsOneWidget,
+        tester
+            .widget<IconButton>(
+              find.byKey(const ValueKey('normal-layout-button')),
+            )
+            .onPressed,
+        isNull,
+      );
+      await tester.tap(aura);
+      await tester.pump(const Duration(milliseconds: 400));
+      expect(
+        tester
+            .widget<IconButton>(
+              find.byKey(const ValueKey('normal-layout-button')),
+            )
+            .onPressed,
+        isNull,
+      );
+      await tester.tap(aura); // Selected mode toggles back to Normal.
+      await tester.pump(const Duration(milliseconds: 400));
+      expect(
+        tester
+            .widget<IconButton>(
+              find.byKey(const ValueKey('normal-layout-button')),
+            )
+            .onPressed,
+        isNotNull,
       );
       await tester.pumpWidget(const SizedBox());
       await tester.pump(const Duration(seconds: 1));
@@ -67,10 +112,11 @@ void main() {
       );
       final store = LayoutStore(dir);
       await store.discard();
+      await store.save(LayoutDraft(recordingSeconds: 7));
       Future<void> open() async {
         await tester.pumpWidget(
           MaterialApp(
-            theme: ThemeData.dark(),
+            theme: AuraTheme.dark,
             home: LayoutCameraScreen(
               cameras: app.cameras,
               aspect: CaptureAspect.standard,
@@ -128,6 +174,8 @@ void main() {
       await tester.pumpAndSettle();
       await tester.tap(find.text('Hybrid'));
       await tester.tap(find.byKey(const ValueKey('template-rows')));
+      await tester.ensureVisible(find.text('Use layout'));
+      await tester.pumpAndSettle();
       await tester.tap(find.text('Use layout'));
       await tester.pumpAndSettle();
       await tester.tap(find.text('Continue'));
@@ -229,12 +277,13 @@ void main() {
             mode: LayoutMode.hybrid,
             aspectId: CaptureAspect.desktop16x10.id,
             ratio: 1.6,
+            recordingSeconds: 7,
           ),
         );
         Future<void> open() async {
           await tester.pumpWidget(
             MaterialApp(
-              theme: ThemeData.dark(),
+              theme: AuraTheme.dark,
               home: LayoutCameraScreen(
                 cameras: cameras,
                 aspect: CaptureAspect.desktop16x10,
@@ -261,6 +310,11 @@ void main() {
           180,
           scrollable: selector,
         );
+        await Scrollable.ensureVisible(
+          tester.element(find.byKey(ValueKey('layout-select-$last'))),
+          alignment: 0.5,
+        );
+        await tester.pumpAndSettle();
         await tester.tap(find.byKey(ValueKey('layout-select-$last')));
         await tester.pump(const Duration(milliseconds: 200));
         await idle();
@@ -324,6 +378,127 @@ void main() {
       await SystemChrome.setPreferredOrientations([]);
     },
     timeout: const Timeout(Duration(minutes: 12)),
+  );
+  testWidgets(
+    'recording presets and custom duration stop each cell automatically',
+    (tester) async {
+      final store = LayoutStore(
+        Directory('${(await getTemporaryDirectory()).path}/layout_timer_test'),
+      );
+      await store.discard();
+      await store.save(
+        LayoutDraft(
+          template: LayoutTemplate.nineStrips,
+          mode: LayoutMode.hybrid,
+        ),
+      );
+      final cameras = await availableCameras();
+      Future<void> until(bool Function() check) async {
+        for (int i = 0; i < 150; i++) {
+          await tester.pump(const Duration(milliseconds: 200));
+          if (check()) return;
+        }
+        fail('Timed recording did not finish');
+      }
+
+      Future<void> open() async {
+        await tester.pumpWidget(
+          MaterialApp(
+            theme: AuraTheme.dark,
+            home: LayoutCameraScreen(
+              cameras: cameras,
+              aspect: CaptureAspect.standard,
+              screen: const Size(1080, 2400),
+              store: store,
+            ),
+          ),
+        );
+        await until(
+          () =>
+              find
+                  .byKey(const ValueKey('layout-shutter'))
+                  .evaluate()
+                  .isNotEmpty &&
+              tester
+                      .widget<IconButton>(
+                        find.byKey(const ValueKey('layout-shutter')),
+                      )
+                      .onPressed !=
+                  null,
+        );
+      }
+
+      await open();
+      expect(find.byKey(const ValueKey('layout-duration')), findsNothing);
+      for (final seconds in [3, 5, 7, 2, 2]) {
+        await tester.tap(find.text('Video'));
+        await tester.pumpAndSettle();
+        await tester.ensureVisible(
+          find.byKey(const ValueKey('layout-duration')),
+        );
+        await tester.tap(find.byKey(const ValueKey('layout-duration')));
+        await tester.pumpAndSettle();
+        if (seconds == 2) {
+          await tester.enterText(
+            find.byKey(const ValueKey('layout-custom-duration')),
+            '2',
+          );
+          await tester.tap(find.text('Set duration'));
+        } else {
+          await tester.tap(find.text('${seconds}s'));
+        }
+        await tester.pumpAndSettle();
+        final before = (await store.load())!;
+        expect(before.recordingSeconds, seconds);
+        final index = before.selected;
+        await tester.ensureVisible(
+          find.byKey(const ValueKey('layout-shutter')),
+        );
+        await tester.tap(find.byKey(const ValueKey('layout-shutter')));
+        await tester.pump(const Duration(seconds: 1));
+        expect(
+          tester
+              .widget<TextButton>(find.byKey(const ValueKey('layout-duration')))
+              .onPressed,
+          isNull,
+        );
+        await until(
+          () =>
+              find.byIcon(Icons.stop).evaluate().isEmpty &&
+              tester
+                      .widget<IconButton>(
+                        find.byKey(const ValueKey('layout-shutter')),
+                      )
+                      .onPressed !=
+                  null,
+        );
+        final captured = (await store.load())!;
+        expect(
+          captured.media[index],
+          isNotNull,
+          reason: tester
+              .widgetList<Text>(find.byType(Text))
+              .map((t) => t.data)
+              .join(' | '),
+        );
+        expect(captured.media[index]!.seconds, closeTo(seconds, .04));
+        expect(captured.filled, before.filled + 1);
+        // A stale deadline must never start or stop the next cell.
+        await tester.pump(const Duration(seconds: 1));
+        expect((await store.load())!.filled, captured.filled);
+        debugPrint(
+          'LAYOUT_TIMER_PASS cell $index target $seconds actual ${captured.media[index]!.seconds}',
+        );
+      }
+      await tester.pumpWidget(const SizedBox());
+      await tester.pump(const Duration(seconds: 1));
+      await open();
+      expect((await store.load())!.recordingSeconds, 2);
+      await tester.pumpWidget(const SizedBox());
+      await tester.pump(const Duration(seconds: 1));
+      await store.discard();
+    },
+    timeout: const Timeout(Duration(minutes: 5)),
   );
   testWidgets('new video masks preserve motion and hold the last frame', (
     tester,

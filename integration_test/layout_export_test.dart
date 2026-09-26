@@ -1,3 +1,5 @@
+import 'package:aura/services/upload_manager.dart';
+
 import 'dart:io';
 
 import 'package:aura/camera/capture_aspect.dart';
@@ -15,6 +17,8 @@ import 'package:integration_test/integration_test.dart';
 import 'package:path_provider/path_provider.dart';
 
 void main() {
+  // Device camera/export tests must not upload real scene photos.
+  UploadManager.instance.suspendForTesting = true;
   IntegrationTestWidgetsFlutterBinding.ensureInitialized();
   testWidgets('native export: every layout, ratio, orientation and media mode', (
     tester,

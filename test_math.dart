@@ -1,15 +1,12 @@
+import 'package:flutter/foundation.dart';
 import 'dart:math';
 import 'package:aura/math/math_utils.dart';
-import 'package:aura/math/face_feature_engine.dart';
-import 'package:aura/math/pose_feature_engine.dart';
-import 'package:aura/math/geometry_engine.dart';
-import 'package:aura/geometry/silhouette_math.dart';
 // Note: We need mock classes for ML kit objects to test them.
 // But since ML Kit classes are sealed/not easily mockable without full setup, 
 // we will just analyze the math logic directly via the functions we wrote.
 
 void main() {
-  print("=== AURA MATH AUDIT TEST ===");
+  debugPrint("=== AURA MATH AUDIT TEST ===");
   
   // Test MathUtils
   assert(MathUtils.clamp(1.5, 0.0, 1.0) == 1.0);
@@ -22,14 +19,13 @@ void main() {
   double roll = 5.0;
   double faceSymmetryExpected = max(0, 1 - (yaw/45.0 + roll/45.0)/2);
   double faceSymmetryActual = 1.0 - (((yaw/45.0) + (roll/45.0)) / 2.0);
-  print("Face Symmetry | Expected: $faceSymmetryExpected | Actual: $faceSymmetryActual");
+  debugPrint("Face Symmetry | Expected: $faceSymmetryExpected | Actual: $faceSymmetryActual");
   
   // Posture Score = max(0, 1 - abs(leftShoulder.y - rightShoulder.y) / distance(leftShoulder, rightShoulder))
-  double lsY = 100.0, rsY = 110.0;
   double dist = 50.0; 
   double postureExpected = max(0, 1 - (10.0) / dist);
   double postureActual = 1.0 - (10.0 / dist);
-  print("Posture Score | Expected: $postureExpected | Actual: $postureActual");
+  debugPrint("Posture Score | Expected: $postureExpected | Actual: $postureActual");
   
-  print("All golden value math equations verified.");
+  debugPrint("All golden value math equations verified.");
 }
