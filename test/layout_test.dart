@@ -2,6 +2,7 @@ import 'dart:io';
 
 import 'package:aura/camera/capture_aspect.dart';
 import 'package:aura/layout/layout_draft.dart';
+import 'package:aura/layout/layout_duration_picker.dart';
 import 'package:aura/layout/layout_exporter.dart';
 import 'package:aura/layout/layout_store.dart';
 import 'package:aura/layout/layout_template.dart';
@@ -13,6 +14,72 @@ import 'package:image/image.dart' as img;
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
+  test(
+    'recording duration persists and old drafts default to three seconds',
+    () {
+      final draft = LayoutDraft(recordingSeconds: 17);
+      expect(LayoutDraft.fromJson(draft.toJson()).recordingSeconds, 17);
+      final legacy = draft.toJson()..remove('recordingSeconds');
+      expect(LayoutDraft.fromJson(legacy).recordingSeconds, 3);
+      for (final invalid in [0, -1, 301]) {
+        expect(
+          () => LayoutDraft.fromJson(
+            draft.toJson()..['recordingSeconds'] = invalid,
+          ),
+          throwsFormatException,
+        );
+      }
+    },
+  );
+  testWidgets('duration presets, custom validation and cancellation', (
+    tester,
+  ) async {
+    int? result;
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Builder(
+          builder: (context) => TextButton(
+            onPressed: () async {
+              result = await showLayoutDurationPicker(context, 3);
+            },
+            child: const Text('Open timer'),
+          ),
+        ),
+      ),
+    );
+    Future<void> open() async {
+      await tester.tap(find.text('Open timer'));
+      await tester.pumpAndSettle();
+    }
+
+    for (final seconds in [3, 5, 7]) {
+      await open();
+      await tester.tap(find.text('${seconds}s'));
+      await tester.pumpAndSettle();
+      expect(result, seconds);
+    }
+    await open();
+    for (final invalid in ['', '0', '301']) {
+      await tester.enterText(
+        find.byKey(const ValueKey('layout-custom-duration')),
+        invalid,
+      );
+      await tester.tap(find.text('Set duration'));
+      await tester.pumpAndSettle();
+      expect(find.text('Enter 1–300 seconds'), findsOneWidget);
+    }
+    await tester.enterText(
+      find.byKey(const ValueKey('layout-custom-duration')),
+      '12',
+    );
+    await tester.tap(find.text('Set duration'));
+    await tester.pumpAndSettle();
+    expect(result, 12);
+    await open();
+    await tester.tap(find.text('Cancel'));
+    await tester.pumpAndSettle();
+    expect(result, isNull);
+  });
   late Directory temp;
   final sources = <String>[];
   final colors = [

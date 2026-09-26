@@ -9,11 +9,72 @@ import 'package:flutter/foundation.dart';
 import 'package:image/image.dart' as img;
 import 'package:path_provider/path_provider.dart';
 import 'package:aura/services/media_save_queue.dart';
+import 'package:aura/services/media_encoder_policy.dart';
 
 import 'layout_draft.dart';
 import 'layout_template.dart';
 
 class LayoutExporter {
+  /// Camera startup/stop latency varies by device. Timed cells are normalized
+  /// to the requested duration, holding the final frame for any shortfall.
+  static Future<String> normalizeTimedRecording(
+    String source,
+    int seconds,
+  ) async {
+    if (seconds < 1 || seconds > 300) {
+      throw ArgumentError.value(seconds, 'seconds');
+    }
+    final dir = await getTemporaryDirectory();
+    final output =
+        '${dir.path}/layout_timed_${DateTime.now().microsecondsSinceEpoch}.mp4';
+    for (final hardware in [
+      if (await MediaEncoderPolicy.useHardware) true,
+      false,
+    ]) {
+      final session = await FFmpegKit.executeWithArguments([
+        '-y',
+        '-i',
+        source,
+        '-map',
+        '0:v:0',
+        '-map',
+        '0:a:0?',
+        '-vf',
+        'setpts=PTS-STARTPTS,fps=30,tpad=stop_mode=clone:stop_duration=$seconds',
+        '-af',
+        'asetpts=PTS-STARTPTS,apad',
+        '-t',
+        '$seconds',
+        '-c:v',
+        hardware ? 'h264_mediacodec' : 'libx264',
+        if (hardware) ...[
+          '-b:v',
+          '12000000',
+        ] else ...[
+          '-preset',
+          'veryfast',
+          '-crf',
+          '18',
+        ],
+        '-pix_fmt',
+        'yuv420p',
+        '-c:a',
+        'aac',
+        '-b:a',
+        '192k',
+        '-movflags',
+        '+faststart',
+        output,
+      ]);
+      if (ReturnCode.isSuccess(await session.getReturnCode()) &&
+          await File(output).length() > 0) {
+        return output;
+      }
+    }
+    if (await File(output).exists()) await File(output).delete();
+    throw StateError('Could not finalize the timed recording. Please retry.');
+  }
+
   static Future<LayoutMedia> inspectVideo(
     String path, {
     bool mirror = false,
@@ -200,7 +261,10 @@ class LayoutExporter {
   ) async {
     // Software works for every layout dimension; Android hardware is a fast
     // first attempt, with the same graph and a software fallback.
-    for (final hardware in [if (Platform.isAndroid) true, false]) {
+    for (final hardware in [
+      if (await MediaEncoderPolicy.useHardware) true,
+      false,
+    ]) {
       final done = Completer<bool>();
       await FFmpegKit.executeWithArgumentsAsync(
         videoArguments(draft, path, hardware: hardware, longEdge: longEdge),

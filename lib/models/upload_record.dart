@@ -1,4 +1,3 @@
-import 'dart:convert';
 
 enum UploadStatus { pending, uploading, uploaded, failed, retrying }
 

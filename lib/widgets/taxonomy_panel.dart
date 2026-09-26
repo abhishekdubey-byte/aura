@@ -1,4 +1,6 @@
+import 'package:aura/theme/aura_theme.dart';
 import 'package:flutter/material.dart';
+
 import '../models/detailed_aura_score.dart';
 
 class AuraTaxonomyPanel extends StatelessWidget {
@@ -17,11 +19,19 @@ class AuraTaxonomyPanel extends StatelessWidget {
             children: [
               Text(
                 label,
-                style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 14),
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontWeight: FontWeight.bold,
+                  fontSize: 14,
+                ),
               ),
               Text(
                 '${dim.score} / 100',
-                style: TextStyle(color: color, fontWeight: FontWeight.bold, fontSize: 14),
+                style: TextStyle(
+                  color: color,
+                  fontWeight: FontWeight.bold,
+                  fontSize: 14,
+                ),
               ),
             ],
           ),
@@ -41,14 +51,20 @@ class AuraTaxonomyPanel extends StatelessWidget {
             children: [
               Expanded(
                 child: Text(
-                  dim.primaryTraits.isNotEmpty ? dim.primaryTraits.join(' • ') : '',
-                  style: const TextStyle(color: Colors.white70, fontSize: 10, fontStyle: FontStyle.italic),
+                  dim.primaryTraits.isNotEmpty
+                      ? dim.primaryTraits.join(' • ')
+                      : '',
+                  style: const TextStyle(
+                    color: AuraColors.muted,
+                    fontSize: 10,
+                    fontStyle: FontStyle.italic,
+                  ),
                   overflow: TextOverflow.ellipsis,
                 ),
               ),
               Text(
                 'Confidence: ${dim.confidence.toStringAsFixed(2)}',
-                style: const TextStyle(color: Colors.white54, fontSize: 10),
+                style: const TextStyle(color: AuraColors.muted, fontSize: 10),
               ),
             ],
           ),
@@ -74,38 +90,74 @@ class AuraTaxonomyPanel extends StatelessWidget {
         children: [
           const Text(
             'AURA PROFILE',
-            style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold, letterSpacing: 2),
+            style: TextStyle(
+              color: Colors.white,
+              fontSize: 16,
+              fontWeight: FontWeight.bold,
+              letterSpacing: 2,
+            ),
           ),
           const Divider(color: Colors.white24, thickness: 1),
-          
+
           if (details.bodyShape.isNotEmpty)
             Padding(
               padding: const EdgeInsets.only(bottom: 12.0),
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  const Text('Body Shape', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+                  const Text(
+                    'Body Shape',
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
                   Column(
                     crossAxisAlignment: CrossAxisAlignment.end,
                     children: [
-                      Text(details.bodyShape, style: const TextStyle(color: Colors.pinkAccent, fontWeight: FontWeight.bold)),
+                      Text(
+                        details.bodyShape,
+                        style: const TextStyle(
+                          color: AuraColors.primary,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
                     ],
                   ),
                 ],
               ),
             ),
-            
-          if (details.face != null) _buildDimensionRow('Face Geometry', details.face!, Colors.pinkAccent),
-          if (details.eyes != null) _buildDimensionRow('Eye Presentation', details.eyes!, Colors.lightBlueAccent),
-          if (details.expression != null) _buildDimensionRow('Expression', details.expression!, Colors.orangeAccent),
-          
-          _buildDimensionRow('Body Silhouette', details.body, Colors.purpleAccent),
+
+          if (details.face != null)
+            _buildDimensionRow(
+              'Face Geometry',
+              details.face!,
+              AuraColors.primary,
+            ),
+          if (details.eyes != null)
+            _buildDimensionRow(
+              'Eye Presentation',
+              details.eyes!,
+              Colors.lightBlueAccent,
+            ),
+          if (details.expression != null)
+            _buildDimensionRow(
+              'Expression',
+              details.expression!,
+              AuraColors.yellow,
+            ),
+
+          _buildDimensionRow(
+            'Body Silhouette',
+            details.body,
+            AuraColors.primary,
+          ),
           _buildDimensionRow('Posture', details.posture, Colors.indigoAccent),
           _buildDimensionRow('Pose Dynamics', details.pose, Colors.tealAccent),
-          _buildDimensionRow('Style (Slay)', details.style, Colors.amberAccent),
+          _buildDimensionRow('Style (Slay)', details.style, AuraColors.yellow),
           _buildDimensionRow('Image Quality', details.image, Colors.cyanAccent),
           _buildDimensionRow('Presence', details.presence, Colors.yellowAccent),
-          _buildDimensionRow('Content', details.content, Colors.redAccent),
+          _buildDimensionRow('Content', details.content, AuraColors.error),
 
           if (details.rawMetrics.isNotEmpty) ...[
             const SizedBox(height: 12),
@@ -114,19 +166,40 @@ class AuraTaxonomyPanel extends StatelessWidget {
               padding: EdgeInsets.symmetric(vertical: 8.0),
               child: Text(
                 'BIOMETRICS BREAKDOWN',
-                style: TextStyle(color: Colors.white, fontSize: 14, fontWeight: FontWeight.bold, letterSpacing: 1),
+                style: TextStyle(
+                  color: Colors.white,
+                  fontSize: 14,
+                  fontWeight: FontWeight.bold,
+                  letterSpacing: 1,
+                ),
               ),
             ),
-            ...details.rawMetrics.entries.map((e) => Padding(
-              padding: const EdgeInsets.symmetric(vertical: 2.0),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Text(e.key, style: const TextStyle(color: Colors.white70, fontSize: 12)),
-                  Text(e.value.toStringAsFixed(3), style: const TextStyle(color: Colors.greenAccent, fontSize: 12, fontWeight: FontWeight.bold, fontFamily: 'monospace')),
-                ],
+            ...details.rawMetrics.entries.map(
+              (e) => Padding(
+                padding: const EdgeInsets.symmetric(vertical: 2.0),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(
+                      e.key,
+                      style: const TextStyle(
+                        color: AuraColors.muted,
+                        fontSize: 12,
+                      ),
+                    ),
+                    Text(
+                      e.value.toStringAsFixed(3),
+                      style: const TextStyle(
+                        color: AuraColors.green,
+                        fontSize: 12,
+                        fontWeight: FontWeight.bold,
+                        fontFamily: 'monospace',
+                      ),
+                    ),
+                  ],
+                ),
               ),
-            )),
+            ),
           ],
         ],
       ),

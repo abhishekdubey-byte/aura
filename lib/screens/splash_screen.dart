@@ -1,3 +1,4 @@
+import 'package:aura/theme/aura_theme.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -15,13 +16,18 @@ class SplashScreen extends StatefulWidget {
   State<SplashScreen> createState() => _SplashScreenState();
 }
 
-class _SplashScreenState extends State<SplashScreen> with SingleTickerProviderStateMixin {
+class _SplashScreenState extends State<SplashScreen>
+    with SingleTickerProviderStateMixin {
   // Drives the intro choreography (orb, letters, tagline)
-  late final AnimationController _intro = AnimationController(vsync: this, duration: const Duration(milliseconds: 1800));
+  late final AnimationController _intro = AnimationController(
+    vsync: this,
+    duration: const Duration(milliseconds: 1800),
+  );
 
   static const String _word = 'AURA';
   late final List<Animation<double>> _letters = [
-    for (int i = 0; i < _word.length; i++) _interval(0.25 + i * 0.08, 0.6 + i * 0.08),
+    for (int i = 0; i < _word.length; i++)
+      _interval(0.25 + i * 0.08, 0.6 + i * 0.08),
   ];
 
   @override
@@ -38,7 +44,9 @@ class _SplashScreenState extends State<SplashScreen> with SingleTickerProviderSt
     final bool onboarded = prefs.getBool('onboarding_seen') ?? false;
 
     // First launch gets the full intro; later launches are snappy
-    final Duration minimum = registered ? const Duration(milliseconds: 1100) : const Duration(milliseconds: 2300);
+    final Duration minimum = registered
+        ? const Duration(milliseconds: 1100)
+        : const Duration(milliseconds: 2300);
     await Future.wait([appReady, Future.delayed(minimum)]);
     if (!mounted) return;
 
@@ -61,8 +69,14 @@ class _SplashScreenState extends State<SplashScreen> with SingleTickerProviderSt
     super.dispose();
   }
 
-  Animation<double> _interval(double begin, double end, [Curve curve = Curves.easeOutCubic]) =>
-      CurvedAnimation(parent: _intro, curve: Interval(begin, end, curve: curve));
+  Animation<double> _interval(
+    double begin,
+    double end, [
+    Curve curve = Curves.easeOutCubic,
+  ]) => CurvedAnimation(
+    parent: _intro,
+    curve: Interval(begin, end, curve: curve),
+  );
 
   @override
   Widget build(BuildContext context) {
@@ -71,7 +85,7 @@ class _SplashScreenState extends State<SplashScreen> with SingleTickerProviderSt
     final footer = _interval(0.75, 1.0);
 
     return Scaffold(
-      backgroundColor: Colors.black,
+      backgroundColor: AuraColors.background,
       body: AuraBackdrop(
         child: SafeArea(
           child: Stack(
@@ -84,7 +98,10 @@ class _SplashScreenState extends State<SplashScreen> with SingleTickerProviderSt
                       animation: orb,
                       builder: (context, child) => Opacity(
                         opacity: orb.value.clamp(0.0, 1.0),
-                        child: Transform.scale(scale: 0.6 + 0.4 * orb.value, child: child),
+                        child: Transform.scale(
+                          scale: 0.6 + 0.4 * orb.value,
+                          child: child,
+                        ),
                       ),
                       child: const AuraOrb(size: 132),
                     ),
@@ -100,14 +117,24 @@ class _SplashScreenState extends State<SplashScreen> with SingleTickerProviderSt
                               final double v = _letters[i].value;
                               return Opacity(
                                 opacity: v.clamp(0.0, 1.0),
-                                child: Transform.translate(offset: Offset(0, 18 * (1 - v)), child: child),
+                                child: Transform.translate(
+                                  offset: Offset(0, 18 * (1 - v)),
+                                  child: child,
+                                ),
                               );
                             },
                             child: Padding(
-                              padding: const EdgeInsets.symmetric(horizontal: 6),
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 6,
+                              ),
                               child: ShimmerText(
                                 _word[i],
-                                style: const TextStyle(fontSize: 52, fontWeight: FontWeight.w900, letterSpacing: 2, color: Colors.white),
+                                style: const TextStyle(
+                                  fontSize: 52,
+                                  fontWeight: FontWeight.w900,
+                                  letterSpacing: 2,
+                                  color: Colors.white,
+                                ),
                               ),
                             ),
                           ),
@@ -118,7 +145,11 @@ class _SplashScreenState extends State<SplashScreen> with SingleTickerProviderSt
                       opacity: tagline,
                       child: const Text(
                         'Discover your aura',
-                        style: TextStyle(color: Colors.white70, fontSize: 16, letterSpacing: 1.5),
+                        style: TextStyle(
+                          color: AuraColors.muted,
+                          fontSize: 16,
+                          letterSpacing: 1.5,
+                        ),
                       ),
                     ),
                   ],
@@ -138,38 +169,56 @@ class _SplashScreenState extends State<SplashScreen> with SingleTickerProviderSt
                           width: 120,
                           child: ValueListenableBuilder<double>(
                             valueListenable: appReadyProgress,
-                            builder: (context, progress, _) => TweenAnimationBuilder<double>(
-                              tween: Tween(end: progress),
-                              duration: const Duration(milliseconds: 400),
-                              builder: (context, value, _) => ClipRRect(
-                                borderRadius: BorderRadius.circular(2),
-                                child: Stack(
-                                  children: [
-                                    Container(height: 3, color: Colors.white12),
-                                    FractionallySizedBox(
-                                      widthFactor: value.clamp(0.05, 1.0),
-                                      child: Container(
-                                        height: 3,
-                                        decoration: const BoxDecoration(gradient: LinearGradient(colors: kAuraGradient)),
-                                      ),
+                            builder: (context, progress, _) =>
+                                TweenAnimationBuilder<double>(
+                                  tween: Tween(end: progress),
+                                  duration: const Duration(milliseconds: 400),
+                                  builder: (context, value, _) => ClipRRect(
+                                    borderRadius: BorderRadius.circular(2),
+                                    child: Stack(
+                                      children: [
+                                        Container(
+                                          height: 3,
+                                          color: Colors.white12,
+                                        ),
+                                        FractionallySizedBox(
+                                          widthFactor: value.clamp(0.05, 1.0),
+                                          child: Container(
+                                            height: 3,
+                                            decoration: const BoxDecoration(
+                                              gradient: LinearGradient(
+                                                colors: kAuraGradient,
+                                              ),
+                                            ),
+                                          ),
+                                        ),
+                                      ],
                                     ),
-                                  ],
+                                  ),
                                 ),
-                              ),
-                            ),
                           ),
                         ),
                         const SizedBox(height: 18),
                         Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 14,
+                            vertical: 6,
+                          ),
                           decoration: BoxDecoration(
                             color: Colors.white.withValues(alpha: 0.06),
                             borderRadius: BorderRadius.circular(20),
-                            border: Border.all(color: Colors.white.withValues(alpha: 0.14)),
+                            border: Border.all(
+                              color: Colors.white.withValues(alpha: 0.14),
+                            ),
                           ),
                           child: const Text(
                             'A Product By GreedHunter',
-                            style: TextStyle(fontSize: 12.5, fontWeight: FontWeight.w500, letterSpacing: 1.1, color: Colors.white60),
+                            style: TextStyle(
+                              fontSize: 12.5,
+                              fontWeight: FontWeight.w500,
+                              letterSpacing: 1.1,
+                              color: AuraColors.muted,
+                            ),
                           ),
                         ),
                       ],

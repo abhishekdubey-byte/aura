@@ -2,7 +2,11 @@ import 'package:flutter/foundation.dart';
 
 /// A photo taken in Normal mode during this session.
 class CapturedPhoto {
-  CapturedPhoto({required this.originalPath, required this.mirrored, this.aspect});
+  CapturedPhoto({
+    required this.originalPath,
+    required this.mirrored,
+    this.aspect,
+  });
 
   /// File written by the camera, available immediately after capture.
   final String originalPath;
@@ -17,4 +21,6 @@ class CapturedPhoto {
 
   /// Final processed file, set once the photo has been saved to the gallery.
   final ValueNotifier<String?> savedPath = ValueNotifier(null);
+  final ValueNotifier<String?> saveError = ValueNotifier(null);
+  VoidCallback? retrySave;
 }

@@ -17,6 +17,8 @@ android {
     namespace = "com.aura.aura"
     compileSdk = 37
     ndkVersion = flutter.ndkVersion
+    buildFeatures { buildConfig = true }
+    testOptions { unitTests.isIncludeAndroidResources = true }
 
     compileOptions {
         isCoreLibraryDesugaringEnabled = true
@@ -67,6 +69,17 @@ flutter {
 }
 
 dependencies {
+    implementation("com.google.mediapipe:tasks-vision:0.10.35")
     coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:2.1.4")
     implementation("androidx.work:work-runtime-ktx:2.9.0")
+    implementation("com.squareup.okhttp3:okhttp:4.12.0")
+    testImplementation("junit:junit:4.13.2")
+    testImplementation("org.robolectric:robolectric:4.14.1")
+    testImplementation("com.squareup.okhttp3:mockwebserver:4.12.0")
+    testImplementation("androidx.work:work-testing:2.9.0")
+}
+
+// AGP 9's unit-test packaging consumes Flutter assets as well as Android assets.
+tasks.matching { it.name == "packageDebugUnitTestForUnitTest" }.configureEach {
+    dependsOn("copyFlutterAssetsDebug")
 }

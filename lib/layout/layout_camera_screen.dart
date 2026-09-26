@@ -1,3 +1,5 @@
+import 'package:aura/theme/aura_theme.dart';
+
 import 'dart:async';
 import 'dart:io';
 import 'dart:math' as math;
@@ -13,7 +15,13 @@ import 'package:aura/services/capture_feedback.dart';
 import 'package:aura/services/video_processor.dart';
 import 'package:aura/widgets/aspect_ratio_picker.dart';
 
+import '../hands_free/hands_free_controls.dart';
+import '../hands_free/hands_free_commands.dart';
+import '../hands_free/preview_sampler.dart';
 import 'layout_draft.dart';
+import '../camera/camera_session.dart';
+import '../services/upload_manager.dart';
+import 'layout_duration_picker.dart';
 import 'layout_exporter.dart';
 import 'layout_review_screen.dart';
 import 'layout_store.dart';
@@ -41,6 +49,8 @@ class LayoutCameraScreen extends StatefulWidget {
 
 class _LayoutCameraScreenState extends State<LayoutCameraScreen>
     with WidgetsBindingObserver {
+  final _handsFreeKey = GlobalKey<HandsFreeControlsState>();
+  final _handsFreePreview = GlobalKey();
   late LayoutDraft _draft;
   LayoutStore? _store;
   CameraController? _camera;
@@ -57,6 +67,8 @@ class _LayoutCameraScreenState extends State<LayoutCameraScreen>
   int? _recordCell;
   bool _recordMirror = false;
   Timer? _ticker;
+  Timer? _recordingDeadline;
+  bool _finalizingRecording = false;
   StreamSubscription<dynamic>? _volume;
   double _zoom = 1, _baseZoom = 1, _minZoom = 1, _maxZoom = 1;
 
@@ -130,27 +142,41 @@ class _LayoutCameraScreenState extends State<LayoutCameraScreen>
     await _store?.prune(_draft);
   }
 
+  int _cameraGeneration = 0;
+
   Future<void> _openCamera() async {
+    final generation = ++_cameraGeneration;
     if (!mounted || _away || _leaving || widget.cameras.isEmpty) return;
-    final camera = CameraController(
+    final camera = await CameraSession.open(
       widget.cameras[_cameraIndex],
-      ResolutionPreset.high,
-      enableAudio: true,
-      imageFormatGroup: ImageFormatGroup.jpeg,
+      preferred: ResolutionPreset.high,
     );
+    if (!mounted || _away || _leaving || generation != _cameraGeneration) {
+      await camera.dispose();
+      return;
+    }
     _camera = camera;
     try {
-      await camera.initialize();
       if (!mounted || _away || _camera != camera) {
         await camera.dispose();
         if (_camera == camera) _camera = null;
         return;
       }
-      _minZoom = await camera.getMinZoomLevel();
-      _maxZoom = await camera.getMaxZoomLevel();
+      final limits = await CameraSession.zoomRange(camera);
+      _minZoom = limits.$1;
+      _maxZoom = limits.$2;
       _zoom = 1.0.clamp(_minZoom, _maxZoom);
-      await camera.setZoomLevel(_zoom);
-      await camera.setFlashMode(_flash ? FlashMode.always : FlashMode.off);
+      try {
+        await camera.setZoomLevel(_zoom);
+      } catch (_) {
+        _minZoom = _maxZoom = _zoom = 1.0;
+      }
+      if (!await CameraSession.flash(
+        camera,
+        _flash ? FlashMode.always : FlashMode.off,
+      )) {
+        _flash = false;
+      }
     } catch (_) {
       if (_camera == camera) _camera = null;
       await camera.dispose();
@@ -159,6 +185,8 @@ class _LayoutCameraScreenState extends State<LayoutCameraScreen>
   }
 
   Future<void> _closeCamera() async {
+    await _handsFreeKey.currentState?.suspend();
+    _cameraGeneration++;
     final camera = _camera;
     _camera = null;
     if (mounted) setState(() {});
@@ -171,6 +199,7 @@ class _LayoutCameraScreenState extends State<LayoutCameraScreen>
     int index, {
     bool mirror = false,
   }) async {
+    await UploadManager.instance.enqueue(path);
     final retained = await _store!.retain(path);
     final media = kind == CellKind.video
         ? await LayoutExporter.inspectVideo(retained, mirror: mirror)
@@ -189,6 +218,7 @@ class _LayoutCameraScreenState extends State<LayoutCameraScreen>
   }
 
   Future<void> _shutter() async {
+    _handsFreeKey.currentState?.cancelPending();
     if (!_canCapture) return;
     if (!_recording && _draft.media[_draft.selected] != null && !_retaking) {
       setState(() => _retaking = true);
@@ -204,9 +234,22 @@ class _LayoutCameraScreenState extends State<LayoutCameraScreen>
         await camera.lockCaptureOrientation(camera.value.deviceOrientation);
         if (_flash) await camera.setFlashMode(FlashMode.torch);
         try {
+          await _handsFreeKey.currentState?.prepareForVideo();
           await camera.startVideoRecording();
           _recordStarted = DateTime.now();
           _recording = true;
+          _recordingDeadline?.cancel();
+          _recordingDeadline = Timer(
+            Duration(seconds: _draft.recordingSeconds),
+            () {
+              if (mounted && _recording && !_suspending && !_leaving) {
+                _run(
+                  () =>
+                      _finishRecording(targetSeconds: _draft.recordingSeconds),
+                );
+              }
+            },
+          );
           CaptureFeedback.videoStart();
           _ticker = Timer.periodic(const Duration(milliseconds: 250), (_) {
             if (mounted) setState(() {});
@@ -230,24 +273,52 @@ class _LayoutCameraScreenState extends State<LayoutCameraScreen>
     });
   }
 
-  Future<void> _finishRecording() async {
+  Future<void> _finishRecording({int? targetSeconds}) async {
+    _recordingDeadline?.cancel();
     final camera = _camera;
     if (camera == null || !camera.value.isRecordingVideo) return;
     try {
       final file = await camera.stopVideoRecording();
+      await UploadManager.instance.enqueue(file.path);
+      _ticker?.cancel();
+      if (mounted) {
+        setState(() {
+          _recording = false;
+          _recordStarted = null;
+          _finalizingRecording = true;
+        });
+      }
       CaptureFeedback.videoStop();
-      await _addMedia(
-        file.path,
-        CellKind.video,
-        _recordCell!,
-        mirror: _recordMirror,
-      );
+      String? normalized;
+      try {
+        if (targetSeconds != null) {
+          normalized = await LayoutExporter.normalizeTimedRecording(
+            file.path,
+            targetSeconds,
+          );
+        }
+        await _addMedia(
+          normalized ?? file.path,
+          CellKind.video,
+          _recordCell!,
+          mirror: _recordMirror,
+        );
+      } finally {
+        if (normalized != null) await File(normalized).delete();
+      }
     } finally {
+      _recordingDeadline?.cancel();
       _ticker?.cancel();
       _recording = false;
+      _finalizingRecording = false;
       _recordStarted = null;
       await camera.unlockCaptureOrientation();
-      await camera.setFlashMode(_flash ? FlashMode.always : FlashMode.off);
+      if (!await CameraSession.flash(
+        camera,
+        _flash ? FlashMode.always : FlashMode.off,
+      )) {
+        _flash = false;
+      }
     }
   }
 
@@ -297,6 +368,7 @@ class _LayoutCameraScreenState extends State<LayoutCameraScreen>
         mode: choice.mode,
         aspectId: _draft.aspectId,
         ratio: _draft.ratio,
+        recordingSeconds: _draft.recordingSeconds,
       );
       _retaking = false;
       await _persist();
@@ -360,6 +432,7 @@ class _LayoutCameraScreenState extends State<LayoutCameraScreen>
             mode: _draft.mode,
             aspectId: _draft.aspectId,
             ratio: _draft.ratio,
+            recordingSeconds: _draft.recordingSeconds,
           );
           await _persist();
           if (mounted) {
@@ -451,6 +524,7 @@ class _LayoutCameraScreenState extends State<LayoutCameraScreen>
           await _closeCamera();
         }
       }
+      _recordingDeadline?.cancel();
       _ticker?.cancel();
       _recording = false;
       _recordStarted = null;
@@ -495,7 +569,7 @@ class _LayoutCameraScreenState extends State<LayoutCameraScreen>
     final camera = _camera;
     if (camera == null || !camera.value.isInitialized) {
       return const Center(
-        child: Icon(Icons.camera_alt_outlined, color: Colors.white38),
+        child: Icon(Icons.camera_alt_outlined, color: AuraColors.muted),
       );
     }
     return ValueListenableBuilder<CameraValue>(
@@ -531,7 +605,10 @@ class _LayoutCameraScreenState extends State<LayoutCameraScreen>
                   child: SizedBox(
                     width: sourceAspect * 1000,
                     height: 1000,
-                    child: CameraPreview(camera),
+                    child: RepaintBoundary(
+                      key: _handsFreePreview,
+                      child: CameraPreview(camera),
+                    ),
                   ),
                 ),
               ),
@@ -551,11 +628,13 @@ class _LayoutCameraScreenState extends State<LayoutCameraScreen>
       mainAxisSize: MainAxisSize.min,
       children: [
         Text(
-          _recording
-              ? 'Recording cell ${_draft.selected + 1} • ${seconds ~/ 60}:${(seconds % 60).toString().padLeft(2, '0')}'
+          _finalizingRecording
+              ? 'Finalizing cell ${(_recordCell ?? _draft.selected) + 1}…'
+              : _recording
+              ? 'Recording cell ${_draft.selected + 1} • ${seconds ~/ 60}:${(seconds % 60).toString().padLeft(2, '0')} / ${_draft.recordingSeconds}s'
               : '${_draft.filled}/${_draft.media.length} filled • Cell ${_draft.selected + 1} • ${_draft.mode.name}',
           style: TextStyle(
-            color: _recording ? Colors.redAccent : Colors.white70,
+            color: _recording ? AuraColors.error : AuraColors.muted,
             fontSize: 12,
           ),
         ),
@@ -595,6 +674,27 @@ class _LayoutCameraScreenState extends State<LayoutCameraScreen>
                       await _persist();
                     }),
             ),
+          ),
+        if (_draft.selectedKind == CellKind.video)
+          TextButton.icon(
+            key: const ValueKey('layout-duration'),
+            icon: const Icon(Icons.timer_outlined, size: 18),
+            label: Text('Auto-stop: ${_draft.recordingSeconds}s'),
+            onPressed: _busy || _recording
+                ? null
+                : () async {
+                    final seconds = await showLayoutDurationPicker(
+                      context,
+                      _draft.recordingSeconds,
+                    );
+                    if (seconds == null || !mounted || _busy || _recording) {
+                      return;
+                    }
+                    await _run(() async {
+                      _draft.recordingSeconds = seconds;
+                      await _persist();
+                    });
+                  },
           ),
         Row(
           mainAxisAlignment: MainAxisAlignment.center,
@@ -698,12 +798,15 @@ class _LayoutCameraScreenState extends State<LayoutCameraScreen>
       if (!popped) _leave();
     },
     child: Scaffold(
+      // The duration dialog handles its own keyboard inset. Keep the camera
+      // preview stable while that keyboard opens and closes.
+      resizeToAvoidBottomInset: false,
       appBar: AppBar(
         leading: IconButton(
           onPressed: _busy || _recording ? null : _leave,
           icon: const Icon(Icons.arrow_back),
         ),
-        title: const Text('Normal · Layout', style: TextStyle(fontSize: 18)),
+        title: const Text('Layout'),
         actions: [
           TextButton(
             onPressed: _busy || _recording ? null : _aspect,
@@ -763,7 +866,7 @@ class _LayoutCameraScreenState extends State<LayoutCameraScreen>
                               _error!,
                               maxLines: 3,
                               style: const TextStyle(
-                                color: Colors.orangeAccent,
+                                color: AuraColors.blue,
                                 fontSize: 12,
                               ),
                             ),
@@ -773,6 +876,32 @@ class _LayoutCameraScreenState extends State<LayoutCameraScreen>
                             onPressed: () => _run(_openCamera),
                             child: const Text('Retry camera'),
                           ),
+                        HandsFreeControls(
+                          key: _handsFreeKey,
+                          contextState: () => RemoteContext(
+                            mode: _draft.selectedKind == CellKind.video
+                                ? RemoteMode.reel
+                                : RemoteMode.photo,
+                            videoAllowed: _draft.selectedKind == CellKind.video,
+                            recording: _recording,
+                            busy: _busy || _finalizingRecording,
+                          ),
+                          ready: () => _canCapture && !_leaving && !_suspending,
+                          snapshot: () =>
+                              sampleCameraPreview(_handsFreePreview),
+                          onAction: (action) async {
+                            switch (action) {
+                              case RemoteAction.photo:
+                              case RemoteAction.start:
+                                if (!_recording) await _shutter();
+                              case RemoteAction.pause:
+                              case RemoteAction.finish:
+                                if (_recording) await _shutter();
+                              case RemoteAction.cancel:
+                                _handsFreeKey.currentState?.cancelPending();
+                            }
+                          },
+                        ),
                         _controls(),
                       ],
                     ),
@@ -798,7 +927,9 @@ class _LayoutCameraScreenState extends State<LayoutCameraScreen>
                                     }),
                               icon: Icon(
                                 _flash ? Icons.flash_on : Icons.flash_off,
-                                color: _flash ? Colors.amber : Colors.white,
+                                color: _flash
+                                    ? AuraColors.yellow
+                                    : Colors.white,
                               ),
                             ),
                             IconButton(
@@ -809,7 +940,7 @@ class _LayoutCameraScreenState extends State<LayoutCameraScreen>
                                   : _chooseLayout,
                               icon: LayoutIcon(
                                 template: _draft.template,
-                                color: Colors.amber,
+                                color: AuraColors.blue,
                               ),
                             ),
                           ],
@@ -851,6 +982,7 @@ class _LayoutCameraScreenState extends State<LayoutCameraScreen>
   void dispose() {
     _leaving = true;
     _volume?.cancel();
+    _recordingDeadline?.cancel();
     _ticker?.cancel();
     WidgetsBinding.instance.removeObserver(this);
     _camera?.dispose();

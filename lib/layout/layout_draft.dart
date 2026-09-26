@@ -45,6 +45,7 @@ class LayoutDraft {
     this.mode = LayoutMode.photos,
     this.aspectId = '3:4',
     this.ratio = .75,
+    this.recordingSeconds = 3,
   }) {
     media = List.filled(template.cells.length, null);
     kinds = List.filled(
@@ -58,6 +59,9 @@ class LayoutDraft {
 
   /// Resolved once (including Full); device rotation does not mutate output.
   double ratio;
+
+  /// Shared automatic stop duration for subsequent cell recordings.
+  int recordingSeconds;
   int selected = 0;
   int? audioCell;
   late List<LayoutMedia?> media;
@@ -94,6 +98,7 @@ class LayoutDraft {
     'mode': mode.name,
     'aspectId': aspectId,
     'ratio': ratio,
+    'recordingSeconds': recordingSeconds,
     'selected': selected,
     'audioCell': audioCell,
     'kinds': kinds.map((k) => k.name).toList(),
@@ -106,7 +111,11 @@ class LayoutDraft {
       mode: LayoutMode.values.byName(j['mode']),
       aspectId: j['aspectId'],
       ratio: (j['ratio'] as num).toDouble(),
+      recordingSeconds: j['recordingSeconds'] as int? ?? 3,
     );
+    if (d.recordingSeconds < 1 || d.recordingSeconds > 300) {
+      throw const FormatException('Invalid recording duration');
+    }
     if (!d.ratio.isFinite || d.ratio <= 0) {
       throw const FormatException('Invalid ratio');
     }

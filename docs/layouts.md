@@ -15,6 +15,14 @@ Boomerang and Aura Calc do not expose the entry point.
   so narrow strips remain easy to select in portrait social formats.
 - Tap an empty cell and use the shutter. In Video, tap once to start and again
   to stop. Volume-down also operates the shutter. Pinch the live cell to zoom.
+- Video cells show **Auto-stop**, with 3s (default), 5s and 7s presets plus a
+  custom 1–300 second duration. The saved duration applies to each subsequent
+  video recording, including Hybrid cells, and recording stops automatically.
+  The elapsed/target display shows progress. Manual stop can finish a clip early;
+  existing and imported clips are unchanged and retain last-frame holding.
+  Automatically stopped clips are normalized to the selected duration at 30 fps,
+  holding the last frame and padding audio with silence to compensate for camera
+  startup latency. This finalization runs before the cell becomes ready.
 - Import uses the gallery for the selected cell's media type. Retake preserves
   the old capture until its replacement succeeds. Clear empties one cell.
 - The selected ratio applies to the whole composition. All 12 existing presets
@@ -94,9 +102,14 @@ Native Android checks use the connected RMX3031. iOS requires separate device or
 simulator validation. The repository-wide analyzer baseline already contains
 missing imports in `test_math.dart` from files deleted before this feature.
 
-Verified on 2026-09-25: all 659 local tests, 792 native matrix exports, and all
-three camera/motion integration tests passed on RMX3031. The motion test covers
+Verified on 2026-09-25: all 661 local tests, 792 native matrix exports, and all
+four camera/motion/timer integration tests passed on RMX3031. The motion test covers
 six additional video-only/hybrid exports. Real-camera checks covered capture,
 last-cell selection, landscape controls and full-resolution review for every new
 preset. The feature's source and tests analyze without issues. Repository-wide
 analysis retains the 44 pre-existing baseline issues.
+
+Timed recording verification: all 661 local tests and the camera workflow suite
+passed. After camera-latency normalization, the dedicated device test measured
+3.0s, 5.0s, 7.0s, 2.0s and 2.0s saved clips, and verified custom-duration
+persistence and consecutive automatic stops. Feature analysis reports no issues.

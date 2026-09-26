@@ -1,3 +1,7 @@
+import '../widgets/aura_controls.dart';
+
+import 'package:aura/theme/aura_theme.dart';
+
 import 'dart:io';
 
 import 'package:flutter/material.dart';
@@ -125,7 +129,7 @@ class LayoutGrid extends StatelessWidget {
                                 draft.kinds[i] == CellKind.video
                                     ? Icons.videocam_outlined
                                     : Icons.add_a_photo_outlined,
-                                color: Colors.white38,
+                                color: AuraColors.muted,
                               ),
                             ),
                           if (showSelection) ...[
@@ -215,10 +219,10 @@ class LayoutCellSelector extends StatelessWidget {
                 ? Icons.videocam_outlined
                 : Icons.photo_camera_outlined,
             size: 15,
-            color: draft.selected == i ? Colors.black : Colors.white70,
+            color: draft.selected == i ? Colors.black : AuraColors.muted,
           ),
           selected: draft.selected == i,
-          selectedColor: Colors.amber,
+          selectedColor: AuraColors.primary,
           labelStyle: TextStyle(
             color: draft.selected == i ? Colors.black : Colors.white,
           ),
@@ -239,7 +243,7 @@ class _CellOutlinePainter extends CustomPainter {
     canvas.drawPath(
       template.cellPath((Offset.zero & size).deflate(selected ? 1 : .25)),
       Paint()
-        ..color = selected ? Colors.amber : Colors.white38
+        ..color = selected ? AuraColors.primary : AuraColors.muted
         ..style = PaintingStyle.stroke
         ..strokeWidth = selected ? 2 : .5,
     );
@@ -304,11 +308,11 @@ Future<({LayoutTemplate template, LayoutMode mode})?> showLayoutPicker(
                           style: OutlinedButton.styleFrom(
                             padding: const EdgeInsets.symmetric(vertical: 12),
                             backgroundColor: selected == t
-                                ? Colors.amber.withValues(alpha: .16)
+                                ? AuraColors.primary.withValues(alpha: .16)
                                 : null,
                             side: BorderSide(
                               color: selected == t
-                                  ? Colors.amber
+                                  ? AuraColors.primary
                                   : Colors.white24,
                             ),
                           ),
@@ -319,7 +323,7 @@ Future<({LayoutTemplate template, LayoutMode mode})?> showLayoutPicker(
                                 template: t,
                                 size: 36,
                                 color: selected == t
-                                    ? Colors.amber
+                                    ? AuraColors.primary
                                     : Colors.white,
                               ),
                               const SizedBox(height: 8),
@@ -346,10 +350,11 @@ Future<({LayoutTemplate template, LayoutMode mode})?> showLayoutPicker(
                   textAlign: TextAlign.center,
                 ),
                 const SizedBox(height: 16),
-                FilledButton(
+                AuraButton(
                   onPressed: () =>
                       Navigator.pop(context, (template: selected, mode: mode)),
-                  child: const Text('Use layout'),
+                  label: 'Use layout',
+                  icon: Icons.check_rounded,
                 ),
               ],
             ),

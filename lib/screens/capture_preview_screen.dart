@@ -3,76 +3,160 @@ import 'dart:io';
 import 'package:aura/models/captured_photo.dart';
 import 'package:flutter/material.dart';
 import 'package:gal/gal.dart';
+import 'package:share_plus/share_plus.dart';
 
-/// Full-screen viewer for photos taken this session. Opens instantly from the
-/// local files, even while a photo is still being saved to the gallery.
+import '../theme/aura_theme.dart';
+import '../widgets/aura_controls.dart';
+
 class CapturePreviewScreen extends StatefulWidget {
   const CapturePreviewScreen({super.key, required this.photos});
-
-  /// Newest first.
   final List<CapturedPhoto> photos;
-
   @override
   State<CapturePreviewScreen> createState() => _CapturePreviewScreenState();
 }
 
 class _CapturePreviewScreenState extends State<CapturePreviewScreen> {
   int _index = 0;
-
-  Future<void> _openGalleryApp() async {
+  bool _sharing = false;
+  Future<void> _gallery() async {
     try {
       await Gal.open();
-    } catch (e) {
+    } catch (_) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Could not open gallery app')),
+          const SnackBar(content: Text('Could not open your gallery.')),
         );
       }
     }
   }
 
+  Future<void> _share(String path) async {
+    if (_sharing) return;
+    setState(() => _sharing = true);
+    try {
+      final box = context.findRenderObject() as RenderBox;
+      await SharePlus.instance.share(
+        ShareParams(
+          files: [XFile(path)],
+          sharePositionOrigin: box.localToGlobal(Offset.zero) & box.size,
+        ),
+      );
+    } catch (_) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Could not share this photo. Try again.'),
+          ),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _sharing = false);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
-    // Decode at a bit above screen resolution: sharp, with room to zoom, without
-    // holding full 16MP bitmaps in memory.
-    final decodeWidth = (MediaQuery.sizeOf(context).width * MediaQuery.devicePixelRatioOf(context) * 1.5).round();
-
+    if (widget.photos.isEmpty) {
+      return Scaffold(
+        appBar: AppBar(title: const Text('Your photos')),
+        body: AuraEmptyState(
+          icon: Icons.photo_library_outlined,
+          title: 'Make your first moment',
+          message: 'Photos you capture appear here.',
+          action: 'Back to camera',
+          onAction: () => Navigator.maybePop(context),
+        ),
+      );
+    }
+    final width =
+        (MediaQuery.sizeOf(context).width *
+                MediaQuery.devicePixelRatioOf(context) *
+                1.5)
+            .round();
+    final current = widget.photos[_index];
     return Scaffold(
-      backgroundColor: Colors.black,
-      body: Stack(
-        fit: StackFit.expand,
-        children: [
-          PageView.builder(
-            itemCount: widget.photos.length,
-            onPageChanged: (i) => setState(() => _index = i),
-            itemBuilder: (context, i) => _PhotoPage(photo: widget.photos[i], decodeWidth: decodeWidth),
-          ),
-          SafeArea(
-            child: Align(
-              alignment: Alignment.topCenter,
-              child: Row(
-                children: [
-                  IconButton(
-                    icon: const Icon(Icons.close, color: Colors.white),
-                    onPressed: () => Navigator.pop(context),
-                  ),
-                  Expanded(
-                    child: Text(
-                      '${_index + 1} / ${widget.photos.length}',
-                      textAlign: TextAlign.center,
-                      style: const TextStyle(color: Colors.white70, fontWeight: FontWeight.bold),
-                    ),
-                  ),
-                  IconButton(
-                    icon: const Icon(Icons.photo_library, color: Colors.white),
-                    tooltip: 'Open gallery',
-                    onPressed: _openGalleryApp,
-                  ),
-                ],
-              ),
-            ),
+      appBar: AppBar(
+        title: Text('Photo ${_index + 1} of ${widget.photos.length}'),
+        actions: [
+          IconButton(
+            tooltip: 'Open gallery',
+            onPressed: _gallery,
+            icon: const Icon(Icons.photo_library_outlined),
           ),
         ],
+      ),
+      body: SafeArea(
+        child: Column(
+          children: [
+            Expanded(
+              child: PageView.builder(
+                itemCount: widget.photos.length,
+                onPageChanged: (i) => setState(() => _index = i),
+                itemBuilder: (_, i) =>
+                    _PhotoPage(photo: widget.photos[i], decodeWidth: width),
+              ),
+            ),
+            Padding(
+              padding: const EdgeInsets.all(20),
+              child: ValueListenableBuilder<String?>(
+                valueListenable: current.savedPath,
+                builder: (_, saved, _) => ValueListenableBuilder<String?>(
+                  valueListenable: current.saveError,
+                  builder: (_, error, _) => Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      if (error != null) ...[
+                        AuraNotice(error, error: true),
+                        const SizedBox(height: 12),
+                        OutlinedButton.icon(
+                          onPressed: current.retrySave,
+                          icon: const Icon(Icons.refresh_rounded),
+                          label: const Text('Retry save'),
+                        ),
+                      ] else if (saved == null)
+                        const Padding(
+                          padding: EdgeInsets.only(bottom: 12),
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              SizedBox.square(
+                                dimension: 14,
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                ),
+                              ),
+                              SizedBox(width: 10),
+                              Text('Saving to your gallery…'),
+                            ],
+                          ),
+                        )
+                      else
+                        const Padding(
+                          padding: EdgeInsets.only(bottom: 12),
+                          child: Text(
+                            'Saved to your gallery',
+                            style: TextStyle(
+                              color: AuraColors.green,
+                              fontSize: 13,
+                            ),
+                          ),
+                        ),
+                      SizedBox(
+                        width: double.infinity,
+                        child: AuraButton(
+                          label: 'Share photo',
+                          icon: Icons.ios_share_rounded,
+                          busy: _sharing,
+                          onPressed: saved == null ? null : () => _share(saved),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -80,70 +164,41 @@ class _CapturePreviewScreenState extends State<CapturePreviewScreen> {
 
 class _PhotoPage extends StatelessWidget {
   const _PhotoPage({required this.photo, required this.decodeWidth});
-
   final CapturedPhoto photo;
   final int decodeWidth;
-
-  /// Shows the unsaved original with the same centred crop as the saved file
-  /// (a no-op once the cropped file is shown).
-  Widget _framed(Widget image) {
-    final double? aspect = photo.aspect;
-    if (aspect == null) return image;
-    return AspectRatio(
-      aspectRatio: aspect,
-      child: ClipRect(child: FittedBox(fit: BoxFit.cover, child: image)),
-    );
-  }
-
   @override
-  Widget build(BuildContext context) {
-    return ValueListenableBuilder<String?>(
-      valueListenable: photo.savedPath,
-      builder: (context, savedPath, _) {
-        final bool saved = savedPath != null;
-        return Stack(
-          fit: StackFit.expand,
-          children: [
-            InteractiveViewer(
-              maxScale: 5,
-              child: Center(
-                // Same widget structure before and after saving so gaplessPlayback
-                // swaps the original for the saved file without a flash.
-                child: _framed(
-                  Transform.flip(
-                    flipX: !saved && photo.mirrored,
-                    child: Image.file(
-                      File(savedPath ?? photo.originalPath),
-                      cacheWidth: decodeWidth,
-                      fit: BoxFit.contain,
-                      gaplessPlayback: true,
-                    ),
-                  ),
-                ),
-              ),
-            ),
-            if (!saved)
-              const SafeArea(
-                child: Align(
-                  alignment: Alignment.bottomCenter,
-                  child: Padding(
-                    padding: EdgeInsets.only(bottom: 24),
-                    child: Chip(
-                      backgroundColor: Colors.black54,
-                      side: BorderSide.none,
-                      avatar: SizedBox(
-                        width: 14,
-                        height: 14,
-                        child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
-                      ),
-                      label: Text('Saving to gallery…', style: TextStyle(color: Colors.white)),
-                    ),
-                  ),
-                ),
-              ),
-          ],
+  Widget build(BuildContext context) => ValueListenableBuilder<String?>(
+    valueListenable: photo.savedPath,
+    builder: (_, saved, _) {
+      Widget image = Transform.flip(
+        flipX: saved == null && photo.mirrored,
+        child: Image.file(
+          File(saved ?? photo.originalPath),
+          cacheWidth: decodeWidth,
+          fit: BoxFit.contain,
+          gaplessPlayback: true,
+          errorBuilder: (_, _, _) => const AuraEmptyState(
+            icon: Icons.broken_image_outlined,
+            title: 'Photo unavailable',
+            message: 'This file may have been moved or removed.',
+          ),
+        ),
+      );
+      if (photo.aspect != null) {
+        image = AspectRatio(
+          aspectRatio: photo.aspect!,
+          child: ClipRect(
+            child: FittedBox(fit: BoxFit.cover, child: image),
+          ),
         );
-      },
-    );
-  }
+      }
+      return Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 16),
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(20),
+          child: InteractiveViewer(maxScale: 5, child: Center(child: image)),
+        ),
+      );
+    },
+  );
 }
